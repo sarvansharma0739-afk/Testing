@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080b12">
+<title>RoyalWorld | Premium Learning</title>
+<link rel="manifest" href="manifest.json">
+<!-- Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+:root{--bg:#080b12;--panel:#111722;--panel2:#151e2b;--gold:#e8bd62;--gold2:#f7d98c;--text:#f4f6fa;--muted:#9ba8bb;--line:#263244;--blue:#6ea8ff; --red:#ff4d4d; --green:#2ecc71;}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{margin:0;background:radial-gradient(ellipse at top,#172235 0,#080b12 55%);background-attachment:fixed;color:var(--text);font:15px/1.5 system-ui,-apple-system,sans-serif;user-select:none;-webkit-user-select:none; overflow-x:hidden;}
+.wrap{max-width:1100px;margin:auto;padding:20px 16px 90px; min-height:100vh; display:flex; flex-direction:column;}
+
+/* --- GLASSMORPHISM HEADER & NAV --- */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px; position:sticky; top:0; z-index:100; padding:15px 0; background:rgba(8, 11, 18, 0.7); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid rgba(38, 50, 68, 0.4);}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f7d98c,#a87522);color:#111;display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 8px 28px #e8bd6233; cursor:pointer;}
+.brand h1{font-size:20px;margin:0;letter-spacing:.4px}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px;letter-spacing:1.5px;text-transform:uppercase}
+.header-right{display:flex; align-items:center; gap:8px;}
+.pill{border:1px solid #5b4825;color:var(--gold2);background:#211a0d;padding:6px 11px;border-radius:99px;font-size:11px; font-weight:700; white-space:nowrap; cursor:pointer; transition:0.3s;}
+.pill:hover{background:#3a2e16;}
+.pill.active{background:var(--gold); color:#000; border-color:var(--gold2);}
+.offline-badge{display:none; background:#e74c3c22; border:1px solid #e74c3c; color:#ff7979; padding:5px 10px; border-radius:99px; font-size:11px; font-weight:700;}
+
+/* --- SMART CONTINUE LEARNING BANNER --- */
+#continueLearningBanner {
+    display: none; background: linear-gradient(90deg, #1a2a40, #111722); border: 1px solid var(--gold);
+    border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(232, 189, 98, 0.15); animation: fadeInDown 0.4s ease-out;
+}
+@keyframes fadeInDown { from{opacity:0; transform:translateY(-10px)} to{opacity:1; transform:translateY(0)} }
+.cl-info h4 { margin:0; color:var(--gold2); font-size:14px; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.cl-info p { margin:0; font-size:16px; font-weight:700; color:#fff; }
+.btn-resume { background:linear-gradient(90deg,#e8bd62,#f4d78c); color:#111; font-weight:800; border:none; padding:10px 18px; border-radius:8px; cursor:pointer; font-size:14px; transition:0.2s; box-shadow:0 4px 15px rgba(232,189,98,0.3); }
+.btn-resume:hover { transform:scale(1.05); }
+.btn-dismiss-banner { background:transparent; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:5px; line-height:1; margin-left:10px;}
+.btn-dismiss-banner:hover { color:#fff; }
+.cl-actions { display: flex; align-items: center; }
+
+/* --- APP NAV & MAIN TABS --- */
+.main-tabs{display:flex; gap:10px; margin-bottom:15px; overflow-x:auto; padding-bottom:5px;}
+
+.app-nav{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; background:rgba(17, 23, 34, 0.8); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); padding:13px 18px; border-radius:16px; border:1px solid var(--line); flex-wrap:wrap;}
+.nav-left{display:flex; align-items:center; gap:12px;}
+.back-btn{background:#263244; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; display:none;}
+.back-btn:hover{background:#3b485c;}
+.nav-title{font-size:17px; font-weight:700; margin:0; color:var(--gold2);}
+
+/* Universal Search */
+.search-box{background:rgba(8, 11, 18, 0.6); border:1px solid var(--line); color:#fff; padding:10px 15px; border-radius:8px; font-size:14px; outline:none; min-width:220px; display:none; transition:0.3s;}
+.search-box:focus{border-color:var(--gold); box-shadow:0 0 10px rgba(232, 189, 98, 0.2); background:rgba(8, 11, 18, 0.9);}
+
+/* --- VIEWS & ANIMATIONS --- */
+.view{display:none;}
+.view.active{display:block; animation:smoothFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);}
+@keyframes smoothFadeIn { from{opacity:0; transform:translateY(15px) scale(0.98)} to{opacity:1; transform:translateY(0) scale(1)} }
+
+/* --- GRID LAYOUTS --- */
+.grid-courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
+.grid-subjects{display:flex; flex-direction:column; gap:12px;}
+.grid-classes{display:grid;grid-template-columns:1fr;gap:14px;}
+.grid-tests{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+
+/* --- SKELETON LOADING --- */
+.skeleton { background: #1b2a40; background: linear-gradient(90deg, #1b2a40 25%, #263244 50%, #1b2a40 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* --- PREMIUM COURSE CARD --- */
+.course-card{background:var(--panel); border:1px solid var(--line); border-radius:20px; overflow:hidden; transition:all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position:relative; display:flex; flex-direction:column;}
+.course-card:hover{transform:translateY(-6px); border-color:var(--gold); box-shadow:0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(232,189,98,0.15);}
+.c-thumb{width:100%; aspect-ratio:16/9; background-color:#1b2a40; background-size:cover; background-position:center; position:relative;}
+
+/* NEW THUMBNAIL BLUR LOCK FIX */
+.locked-thumb::after { content:"🔒"; position:absolute; inset:0; display:grid; place-items:center; font-size:45px; background:rgba(17,23,34,0.75); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:2; text-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+
+.c-info{padding:18px; position:relative; z-index:2; margin-top:0;}
+.c-title{margin:0; font-size:18px; font-weight:800; color:#fff; text-shadow:0 2px 10px #000;}
+.c-meta{margin:6px 0 15px; color:var(--gold2); font-size:13px; font-weight:600;}
+
+.countdown-timer { background:#e74c3c22; color:#ff7979; border:1px solid #e74c3c; padding:6px 12px; border-radius:8px; font-weight:800; font-size:13px; margin-bottom:15px; display:inline-block;}
+
+/* Let's Study CTA Button */
+.btn-start-learning { display:block; width:100%; background:linear-gradient(90deg,#e8bd62,#f4d78c); color:#111; font-weight:800; text-align:center; padding:12px; border-radius:10px; text-decoration:none; transition:0.3s; border:none; cursor:pointer; font-size:15px; box-shadow:0 4px 15px rgba(232,189,98,0.2);}
+.btn-start-learning:hover { filter:brightness(1.1); transform:scale(1.02); box-shadow:0 6px 20px rgba(232,189,98,0.4);}
+.course-card:hover .btn-start-learning:not(.btn-unlock-course) { animation: pulseBtn 1s infinite alternate; }
+@keyframes pulseBtn { from{transform:scale(1);} to{transform:scale(1.03);} }
+
+.badge-soon{position:absolute; top:12px; right:12px; background:linear-gradient(90deg, #e74c3c, #ff7979); color:#fff; font-size:11px; font-weight:800; padding:5px 10px; border-radius:20px; box-shadow:0 4px 15px #e74c3c66; border:1px solid #ff9e9e; z-index:3; animation:pulse 2s infinite;}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+
+/* --- PREMIUM SUBJECT CARD --- */
+.sub-card{display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:linear-gradient(90deg, #111722, #151e2b); border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:12px; text-align:left; overflow:hidden; cursor:pointer; transition:all 0.3s ease;}
+.sub-card:hover{transform:translateX(5px); border-color:var(--gold); box-shadow:0 10px 25px rgba(0,0,0,0.4), 0 0 15px rgba(232,189,98,0.1);}
+.sub-info{flex:1;}
+.sub-title{margin:0; font-size:17px; font-weight:700; color:#fff; letter-spacing:0.5px;}
+.sub-count{margin:4px 0 0; font-size:13px; color:var(--muted);}
+.sub-progress-wrap { width:100px; height:6px; background:#1b2a40; border-radius:10px; margin-left:20px; overflow:hidden; flex-shrink:0;}
+.sub-progress-bar { height:100%; width:0%; background:linear-gradient(90deg,var(--gold),var(--green)); transition:width 0.5s ease-out; }
+
+/* --- CHAPTER HEADER (For Nested Classes) --- */
+.chapter-title { color: var(--gold); font-size: 15px; font-weight:800; text-transform: uppercase; letter-spacing: 1.5px; margin: 25px 0 10px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+
+/* --- TEST CARD --- */
+.test-card { background:linear-gradient(145deg,var(--panel),#0e141e); border:1px solid var(--line); border-radius:16px; padding:20px; transition:0.3s; display:flex; flex-direction:column; gap:10px;}
+.test-card:hover { border-color:var(--blue); transform:translateY(-4px); box-shadow:0 8px 20px rgba(110, 168, 255, 0.15);}
+.test-title { margin:0; font-size:16px; color:#fff; font-weight:700; }
+.test-date { font-size:12px; color:var(--muted); }
+.btn-test { background:linear-gradient(90deg, #2c3e50, #3498db); color:#fff; padding:10px; text-align:center; border-radius:8px; text-decoration:none; font-weight:700; display:block; margin-top:10px; border:none; cursor:pointer;}
+.btn-test:hover { background:linear-gradient(90deg, #34495e, #2980b9); }
+
+/* --- CLASS CARD WITH GAMIFICATION --- */
+.class-card{background:linear-gradient(145deg,var(--panel),#0e141e); border:1px solid var(--line); border-radius:16px; padding:16px; transition:all 0.3s ease; display:flex; flex-direction:column; gap:12px; position:relative;}
+.class-card:hover{border-color:#3b485c; transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+.class-card.completed { border-color:#193829; background:linear-gradient(145deg,#0e1a14,#0e141e); }
+
+.class-top{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.class-num{background:#e8bd6218; color:var(--gold2); font-weight:700; padding:4px 10px; border-radius:8px; font-size:12px; border:1px solid #e8bd6230;}
+.class-num.completed { background:#2ecc7122; color:#2ecc71; border-color:#2ecc7155; }
+
+/* Elegant Minimal Check Circle */
+.mark-done-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; font-size: 14px; color: transparent; }
+.mark-done-circle:hover { border-color: var(--gold); background: rgba(232,189,98,0.1); }
+.mark-done-circle.done { background: #2ecc71; border-color: #2ecc71; color: #fff; }
+
+.class-title{margin:4px 0 0; font-size:16px; line-height:1.4; padding-right:30px;}
+.class-actions{display:flex; gap:8px; margin-top:auto; flex-wrap:wrap;}
+
+.btn-play{flex:1; min-width:110px; background:linear-gradient(90deg,#e8bd62,#f4d78c); color:#17130a; font-weight:700; border-radius:10px; padding:11px 14px; text-align:center; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; transition:0.2s;}
+.btn-play:hover{filter:brightness(1.08); transform:scale(1.02);}
+
+/* Text Notes Button */
+.btn-notes{background:#263244; color:#fff; border:1px solid #3b485c; border-radius:10px; padding:0 15px; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:13px; font-weight:700; transition:.2s; min-width:80px;}
+.btn-notes:hover{background:var(--blue); border-color:var(--blue); color:#000; transform:scale(1.05);}
+
+/* Empty State */
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 20px;border:1px dashed var(--line);border-radius:16px; background:#ffffff05;}
+
+/* Admin Toolbar */
+.toolbar{display:none;background:rgba(27, 42, 64, 0.9); backdrop-filter:blur(10px); padding:15px;border-radius:13px;border:1px solid #6ea8ff;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.btn{background:var(--gold);color:#000;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-weight:700;width:100%;font-size:14px;}
+.btn-blue{background:#6ea8ff;} .btn-red{background:#e74c3c;color:#fff;} .btn-green{background:#2ecc71;color:#000;}
+
+footer{text-align:center;color:#68778b;font-size:12px;margin-top:auto;padding-top:30px; padding-bottom:15px;}
+
+/* Modals General */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6); z-index:999;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:25px;max-width:450px;width:100%;position:relative;max-height:90vh;overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.8);}
+.modal-title{margin-top:0;color:var(--gold2); font-size:20px; margin-bottom:15px;}
+.close-modal{position:absolute;top:15px;right:20px;font-size:26px;color:var(--muted);cursor:pointer;background:none;border:none; padding:0; transition:0.2s;}
+.close-modal:hover{color:#fff; transform:rotate(90deg);}
+.admin-input, .admin-select{width:100%;background:var(--bg);border:1px solid var(--line);padding:13px;border-radius:8px;color:#fff;margin-bottom:15px;font:inherit; outline:none; transition:0.3s;}
+.admin-input:focus, .admin-select:focus{border-color:var(--gold); box-shadow:0 0 8px rgba(232,189,98,0.2);}
+.checkbox-row{display:flex; align-items:center; gap:10px; margin-bottom:15px; background:var(--bg); padding:12px; border-radius:8px; border:1px solid var(--line);}
+
+/* Admin Action Buttons */
+.admin-controls{display:flex; gap:6px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px;}
+.admin-btn{flex:1; background:#263244; color:#fff; border:none; padding:6px; border-radius:6px; cursor:pointer; font-size:11px;}
+.admin-btn.del{background:#5c2b2b; color:#ff9e9e;}
+
+/* FOOLPROOF MOBILE VIDEO PLAYER FIX */
+.iframe-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; }
+.iframe-container iframe, .iframe-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000; }
+
+/* Toggle Switch */
+.switch{position:relative; display:inline-block; width:44px; height:24px;}
+.switch input{opacity:0; width:0; height:0;}
+.slider{position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#263244; transition:.4s; border-radius:34px;}
+.slider:before{position:absolute; content:""; height:16px; width:16px; left:4px; bottom:4px; background-color:white; transition:.4s; border-radius:50%;}
+input:checked + .slider{background-color:#2ecc71;}
+input:checked + .slider:before{transform:translateX(20px);}
+
+@media(max-width:600px){
+    .wrap{padding:10px 10px 40px}
+    header { padding: 10px 5px; }
+    .brand h1 { font-size:18px; }
+    .logo { width:40px; height:40px; font-size:18px; }
+    .grid-classes{grid-template-columns:1fr;}
+    .app-nav{padding:12px 15px;}
+    .search-box{width:100%; margin-top:8px;}
+    #playerModal { padding: 0; }
+    #playerModal .modal-box { border-radius: 0; border: none; height: 100vh; max-height: 100vh; }
+}
+</style>
+</head>
+<body oncontextmenu="return false;" onkeydown="return disableShortcuts(event);">
+
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="logo" onclick="secretAdminLogin()" title="RoyalWorld">RW</div>
+    <div><h1>RoyalWorld</h1><p>Premium Learning</p></div>
+  </div>
+  <div class="header-right">
+    <div id="offlineIndicator" class="offline-badge" style="display: none;">⚡ OFFLINE</div>
+    <!-- Pill will change dynamically based on any locked courses -->
+    <div class="pill" id="accessPill" style="display: block; color: rgb(46, 204, 113);">✦ DIRECT ACCESS</div>
+  </div>
+</header>
+
+<!-- SMART CONTINUE LEARNING BANNER -->
+<div id="continueLearningBanner" style="display: none;">
+    <div class="cl-info">
+        <h4>Welcome Back!</h4>
+        <p id="clClassTitle">Class Title</p>
+    </div>
+    <div class="cl-actions">
+        <button class="btn-resume" onclick="resumeLastClass()">▶ Resume</button>
+        <button class="btn-dismiss-banner" onclick="dismissContinueBanner()" title="Close">×</button>
+    </div>
+</div>
+
+<!-- MAIN TABS FOR COURSES & TESTS -->
+<div class="main-tabs">
+    <button class="pill active" id="tabCourses" onclick="showCourses()">📚 Courses</button>
+    <button class="pill" id="tabTests" onclick="showTests()">📝 Live Tests</button>
+</div>
+
+<!-- ADMIN TOOLBAR -->
+<div class="toolbar" id="adminBar" style="display: none;">
+    <div style="width:100%; color:var(--gold2); font-weight:700; font-size:13px; margin-bottom:5px;">Admin Controls:</div>
+    <button class="btn" style="flex:1; padding:10px;" onclick="openCourseModal()">+ Course</button>
+    <button class="btn" style="flex:1; padding:10px;" onclick="openSubjectModal()">+ Subject</button>
+    <button class="btn" style="flex:1; padding:10px;" onclick="openClassModal()">+ Class</button>
+    <button class="btn btn-blue" style="flex:1; padding:10px;" onclick="openTestModal()">+ Test</button>
+    <button class="btn btn-blue" style="flex:1; padding:10px;" onclick="openSettings()">⚙️ Set</button>
+    <button class="btn btn-red" style="flex:1; padding:10px;" onclick="adminLogout()">🚪 Out</button>
+    <button class="btn btn-green" style="width:100%; padding:12px;" onclick="downloadUpdatedHTML()">💾 SAVE LIVE WEBSITE</button>
+</div>
+
+<!-- NAVIGATION HEADER -->
+<div class="app-nav">
+    <div class="nav-left">
+        <button class="back-btn" id="btnBack" onclick="goBack()" style="display: none;">← Back</button>
+        <h2 class="nav-title" id="navTitle">All Courses</h2>
+    </div>
+    <input type="search" id="classSearchInput" class="search-box" placeholder="🔍 Search any lecture..." oninput="filterClasses()" style="display: none;">
+</div>
+
+<!-- VIEW 1: COURSES -->
+<div id="view-courses" class="view active">
+    <div class="grid-courses" id="coursesGrid"></div>
+</div>
+
+<!-- VIEW 2: SUBJECTS -->
+<div id="view-subjects" class="view">
+    <div class="grid-subjects" id="subjectsGrid"></div>
+</div>
+
+<!-- VIEW 3: CLASSES (Grouped by Chapters) -->
+<div id="view-classes" class="view">
+    <div class="grid-classes" id="classesGrid"></div>
+</div>
+
+<!-- VIEW 4: TESTS -->
+<div id="view-tests" class="view">
+    <div class="grid-tests" id="testsGrid"></div>
+</div>
+
+<footer>
+    © RoyalWorld • Premium Learning App 
+</footer>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. Admin Login -->
+<div id="loginModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title">Admin Login</h3>
+        <input type="password" id="adminPass" class="admin-input" placeholder="Enter Password">
+        <button class="btn" onclick="verifyAdmin()">Login</button>
+    </div>
+</div>
+
+<!-- 2. Settings & Ads -->
+<div id="settingsModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title">⚙️ Global Settings</h3>
+        <label style="color:var(--muted); font-size:12px; margin-bottom:5px; display:block;">Change Password</label>
+        <input type="text" id="setAdminPass" class="admin-input" placeholder="Enter new password">
+        
+        <div style="margin-top:10px; margin-bottom:20px; display:flex; align-items:center; background:#1b2a40; padding:15px; border-radius:8px; border:1px solid var(--line);">
+            <label class="switch"><input type="checkbox" id="setAdsToggle"><span class="slider"></span></label>
+            <div style="margin-left:12px;">
+                <b style="display:block; font-size:14px; color:#fff;">Enable Ad-Lock System</b>
+                <span style="font-size:11px; color:var(--muted);">Enable 24h locks per course</span>
+            </div>
+        </div>
+
+        <button class="btn btn-green" onclick="saveSettings()">Save Settings</button>
+    </div>
+</div>
+
+<!-- 4. Video Player -->
+<div id="playerModal" class="modal" style="display: none;">
+    <div class="modal-box" style="padding:0; background:#000; display:flex; flex-direction:column; max-width:900px; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(17, 23, 34, 0.9); backdrop-filter:blur(10px); border-bottom:1px solid #263244;">
+            <h3 style="margin:0; font-size:15px; color:#fff;" id="playerTitle">Lecture Player</h3>
+            <button onclick="closePlayer()" style="background:none; border:none; color:#fff; font-size:26px; cursor:pointer; line-height:1; padding:0;">×</button>
+        </div>
+        
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; background:#000; width:100%;">
+            <div class="iframe-container" id="playerContainer">
+                <iframe id="videoFrame" src="" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" allow="autoplay; fullscreen" allowfullscreen=""></iframe>
+            </div>
+        </div>
+        
+        <div style="background:#0c1017; padding:10px 16px; color:#8899ac; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+            <span id="playerModeLabel">🛡️ RoyalWorld Secure Player</span>
+            <span id="playerStatusText" style="color:var(--gold2);"></span>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Manage Course -->
+<div id="courseModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title" id="courseFormTitle">Edit Course</h3>
+        <input type="hidden" id="crsId" value="">
+        <input type="text" id="crsTitle" class="admin-input" placeholder="Course Name (e.g., SSC GK BATCH)">
+        <input type="url" id="crsThumb" class="admin-input" placeholder="Thumbnail Image URL">
+        <label class="checkbox-row">
+            <input type="checkbox" id="crsSoon" style="width:18px; height:18px;">
+            <span style="color:var(--gold2); font-weight:bold;">Mark as "Coming Soon"</span>
+        </label>
+        
+        <div style="background:#111722; padding:15px; border-radius:8px; border:1px solid var(--line); margin-bottom:15px;">
+            <label style="color:var(--gold2); font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">Course Unlock Ad Shortlink (FROM SHRINKME)</label>
+            <input type="url" id="crsAdLink" class="admin-input" style="margin-bottom:5px;" placeholder="e.g. https://shrinkme.click/JQKJasM">
+            <div style="font-size:11px; color:var(--muted); line-height:1.4;">
+                <b>IMPORTANT:</b> Paste the short link generated by ShrinkMe here (NOT your own website URL).<br><br>
+                Your ShrinkMe Destination URL should be: <code style="color:#6ea8ff; user-select:all;">https://your-site.vercel.app/#unlock=YOUR_COURSE_ID</code>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="saveCourse()">Save Course</button>
+    </div>
+</div>
+
+<!-- 6. Manage Subject -->
+<div id="subjectModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title" id="subFormTitle">Add Subject</h3>
+        <input type="hidden" id="subId" value="">
+        <select id="subCourseId" class="admin-select"></select>
+        <input type="text" id="subTitle" class="admin-input" placeholder="Subject Name (e.g., Polity, Arithmetic)">
+        <input type="text" id="subIcon" class="admin-input" placeholder="Emoji Icon (Optional now)" style="display:none;">
+        <button class="btn" onclick="saveSubject()">Save Subject</button>
+    </div>
+</div>
+
+<!-- 7. Manage Class -->
+<div id="classModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title" id="clsFormTitle">Add Class</h3>
+        <input type="hidden" id="clsId" value="">
+        <select id="clsCourseId" class="admin-select" onchange="populateSubjectDropdown()"></select>
+        <select id="clsSubjectId" class="admin-select"></select>
+        <input type="text" id="clsChapter" class="admin-input" placeholder="Chapter Name (e.g., Percentage)">
+        <input type="text" id="clsTitle" class="admin-input" placeholder="Class Title (e.g., Lec 1: Features)">
+        <input type="url" id="clsUrl" class="admin-input" placeholder="Online Video Link">
+        <input type="url" id="clsNotes" class="admin-input" placeholder="Notes PDF Link [Optional]">
+        <button class="btn" onclick="saveClass()">Save Class</button>
+    </div>
+</div>
+
+<!-- 8. Manage Tests -->
+<div id="testModal" class="modal" style="display: none;">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <h3 class="modal-title" id="testFormTitle">Add Test</h3>
+        <input type="hidden" id="testId" value="">
+        <input type="text" id="testTitle" class="admin-input" placeholder="Test Title (e.g., Weekly Mock Test 01)">
+        <input type="url" id="testLink" class="admin-input" placeholder="Test Link (URL)">
+        <input type="date" id="testDate" class="admin-input" placeholder="Date">
+        <button class="btn" onclick="saveTest()">Save Test</button>
+    </div>
+</div>
+
+<!-- 9. COMMUNITY POPUP -->
+<div id="communityPopup" class="modal" style="display: flex; z-index: 9999;">
+    <div class="modal-box" style="padding:15px; text-align:center; max-width:400px;">
+        <img src="https://i.postimg.cc/gj1jJP5j/Royal-World-Community-Join-Poster.png" alt="Royal World Community" style="width:100%; border-radius:12px; margin-bottom:15px;">
+        <a href="https://t.me/RoyalWorldOfficiall" target="_blank" onclick="openExternalLink(event, 'https://t.me/RoyalWorldOfficiall')" style="display:flex; align-items:center; justify-content:center; background:#2481cc; color:#fff; text-decoration:none; padding:12px; border-radius:8px; font-weight:700; margin-bottom:10px;">
+            Join Telegram
+        </a>
+        <a href="https://whatsapp.com/channel/0029VbE8ZojJ93wVnz8WRj3g" target="_blank" onclick="openExternalLink(event, 'https://whatsapp.com/channel/0029VbE8ZojJ93wVnz8WRj3g')" style="display:flex; align-items:center; justify-content:center; background:#25d366; color:#fff; text-decoration:none; padding:12px; border-radius:8px; font-weight:700; margin-bottom:15px;">
+            Join WhatsApp
+        </a>
+        <button onclick="dismissCommunityPopup()" style="background:none; border:none; color:var(--muted); text-decoration:underline; cursor:pointer; font-size:14px; padding:10px;">
+            I have already joined (Skip)
+        </button>
+    </div>
+</div>
+
+<!-- ================= DATA & LOGIC ================= -->
+<script id="appDataScript">
+window.ROYAL_DATA = {
+  "config": {
+    "adsEnabled": false,
+    "adminPass": "Uml0aWtAMjAwMQ==",
+    "adLink": "",
+    "adMobEnabled": false
+  },
+  "tests": [
+    {
+      "id": "tst_example1",
+      "title": "SSC Weekly Mock Test 01",
+      "link": "#",
+      "date": "2026-11-20"
+    }
+  ],
+  "courses": [
+    {
+      "id": "crs_sample1",
+      "title": "GK TOPPERS BATCH 5.0",
+      "thumb": "https://i.postimg.cc/90s8Vyw8/Screenshot-2026-11-13-143741.png",
+      "comingSoon": false,
+      "adLink": ""
+    },
+    {
+      "id": "crs_cpzafajhl",
+      "title": "MATHS TOPPERS BATCH",
+      "thumb": "https://i.postimg.cc/3wmC7GCB/Screenshot-2026-11-14-122319.png",
+      "comingSoon": false,
+      "adLink": ""
+    },
+    {
+      "id": "crs_reasoning60",
+      "title": "REASONING BATCH",
+      "thumb": "https://i.postimg.cc/mZMJJr6H/images.jpg",
+      "comingSoon": false,
+      "adLink": ""
+    }
+  ],
+  "subjects": [
+    {
+      "id": "sub_sample1",
+      "courseId": "crs_sample1",
+      "title": "Polity",
+      "icon": ""
+    },
+    {
+      "id": "sub_dmz02ufnk",
+      "courseId": "crs_sample1",
+      "title": "Economy",
+      "icon": ""
+    },
+    {
+      "id": "sub_wz0jkyjc5",
+      "courseId": "crs_cpzafajhl",
+      "title": "Arithmetic",
+      "icon": ""
+    },
+    {
+      "id": "sub_advance_maths",
+      "courseId": "crs_cpzafajhl",
+      "title": "Advance Maths",
+      "icon": ""
+    }
+  ],
+  "classes": [
+    {
+      "id": "cls_polity_1",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 1",
+      "url": "https://player.mediadelivery.net/play/808439/5da83269-a7ab-4bf4-93f1-c3aedd4043e5",
+      "notesUrl": "https://drive.google.com/file/d/1Smab3TZ4wIsN8VT6iaQr0peCwiSEb77E/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_2",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 2",
+      "url": "https://player.mediadelivery.net/play/808439/7ca485fc-5c8b-4f52-a490-96e8a96793a9",
+      "notesUrl": "https://drive.google.com/file/d/1uNCQ1j3J7HZXbJuo23e-uHkgkbLUcMAh/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_3",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 3",
+      "url": "https://player.mediadelivery.net/play/808439/5d23f78c-b9bc-49f9-b139-be6f25f6fbd9",
+      "notesUrl": "https://drive.google.com/file/d/1o_gQs6V1J_lILyAXXqtk1TpnM7hEGT4N/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_4",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 4",
+      "url": "https://player.mediadelivery.net/play/808439/2b0980a5-32f8-4220-9bf2-e56c4e03eac0",
+      "notesUrl": "https://drive.google.com/file/d/1fWFKq8P2sA-Q4vnEQDNU4nNyG4hVHcHR/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_5",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 5",
+      "url": "https://player.mediadelivery.net/play/808439/bde5d4e1-2e91-4f43-8e1a-0179d620be98",
+      "notesUrl": "https://drive.google.com/file/d/15lzwi8YhiX_NNdjP-osZwtmB57Nok2tz/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_6",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 6",
+      "url": "https://player.mediadelivery.net/play/808439/320a6d9b-fdb5-49a2-8d31-dec202fed0f3",
+      "notesUrl": "https://drive.google.com/file/d/1v7NVzzAhnadgneRuRxsQvL_2JipwbV9C/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_7",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 7",
+      "url": "https://player.mediadelivery.net/play/808439/de9824ff-6284-4928-bd08-674dbbc7d2c1",
+      "notesUrl": "https://drive.google.com/file/d/16eDydJw5fo5hWC8_YFfDqGr27O1_O_eQ/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_8",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 8",
+      "url": "https://player.mediadelivery.net/play/808439/05415244-6f52-473a-aecf-24926c410a5c",
+      "notesUrl": "https://drive.google.com/file/d/1xg2m-uq0bo9ar1C7ldTW3Kwrt2aaOQ0Y/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_9",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 9",
+      "url": "https://player.mediadelivery.net/play/808439/3f89019e-6e63-490b-a01e-38c143f5049b",
+      "notesUrl": "https://drive.google.com/file/d/1E0_EH-JcJeJE3P_-BPhKmk4SWyjx8m7a/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_10",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 10",
+      "url": "https://player.mediadelivery.net/play/808439/c903e827-36e7-40ea-8b08-c603490824b7",
+      "notesUrl": "https://drive.google.com/file/d/1r64Owly8R5KSYn9hdu07Os1fbnPXSp08/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_11",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 11",
+      "url": "https://player.mediadelivery.net/play/808439/7173c37a-c87c-4b2f-ad37-a500b108b9ff",
+      "notesUrl": "https://drive.google.com/file/d/1vHv2P73Jav19o-nKfxIm8down3cVwzeM/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_12",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 12",
+      "url": "https://player.mediadelivery.net/play/808439/07876bbd-ebb8-4296-88a8-6e60304e504f",
+      "notesUrl": "https://drive.google.com/file/d/14HmfVR-Mqt1X_RXxWjYaaYuefNBlWXL1/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_13",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 13",
+      "url": "https://player.mediadelivery.net/play/808439/4c776bca-9c82-4899-aacb-dd43449f1a98",
+      "notesUrl": "https://drive.google.com/file/d/1EQllLvWd015r_s9y2DSeWEhrwnDgTAxD/view?usp=drive_link"
+    },
+    {
+      "id": "cls_polity_14",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 14",
+      "url": "https://player.mediadelivery.net/play/808439/c172dc3f-e076-4898-8df8-ba138eaebf0c",
+      "notesUrl": "https://drive.google.com/file/d/16bBKhHe9x2tjJuVq-m-loqzmmUQgqqRV/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_15",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 15",
+      "url": "https://player.mediadelivery.net/play/808439/932661e8-7230-4faa-9802-6acef9c5ae90",
+      "notesUrl": "https://drive.google.com/file/d/1h-HvlEbYOTP_9Hx40tFEo1dlyODyPyrT/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_16",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 16",
+      "url": "https://player.mediadelivery.net/play/808439/09591316-485a-4a44-8d38-6a91a4eae7a0",
+      "notesUrl": "https://drive.google.com/file/d/1h-HvlEbYOTP_9Hx40tFEo1dlyODyPyrT/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_17",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 17",
+      "url": "https://player.mediadelivery.net/play/808439/8aff3c8e-96be-4c84-a7ad-38e3d81ef453",
+      "notesUrl": "https://drive.google.com/file/d/1hDGM7ahRY93sdKHzI6m4t5599DnxxVZ8/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_18",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 18",
+      "url": "https://player.mediadelivery.net/play/808439/fee4835d-abe4-48b7-8d6e-cd82ee418ba8",
+      "notesUrl": "https://drive.google.com/file/d/1z-DO03nBWoNeWGTKH7MoV-4s933eJurB/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_19",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 19",
+      "url": "https://player.mediadelivery.net/play/808439/8ab917c5-df20-41ae-9a6e-9bf50d58a6bc",
+      "notesUrl": "https://drive.google.com/file/d/1HFwXz2IzkoSv77spUZ2W9dIj4yN_WUOk/view?usp=sharing"
+    },
+    {
+      "id": "cls_polity_20",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 20",
+      "url": "https://player.mediadelivery.net/play/808439/e2f1aeae-d4a4-4d52-9bcd-063f6a3fea37",
+      "notesUrl": "https://drive.google.com/file/d/1JhSuzI8AUgIkClC2kbAXATHZRdC4s00G/view?usp=drive_link"
+    },
+    {
+      "id": "cls_polity_21",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 21",
+      "url": "https://player.mediadelivery.net/play/808439/4571ce13-3bf8-435d-ab40-36ff804a2e3b",
+      "notesUrl": "https://drive.google.com/file/d/1h0aD6vD-v6BdjLkYzFaD5AL9YflXuTf7/view?usp=drive_link"
+    },
+    {
+      "id": "cls_polity_22",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 22",
+      "url": "https://player.mediadelivery.net/play/808439/3a459667-9193-4e1d-81ec-bc643d6c6590",
+      "notesUrl": "https://drive.google.com/file/d/12hFC550o4z2ElcZHi794kVO4ii3VRIgy/view?usp=drive_link"
+    },
+    {
+      "id": "cls_polity_23",
+      "subjectId": "sub_sample1",
+      "chapter": "Basics of Polity",
+      "title": "Class 23",
+      "url": "https://player.mediadelivery.net/play/808439/f6e82310-1729-45de-9383-14389a3ddfe8",
+      "notesUrl": "https://drive.google.com/file/d/1ojsvDjPr3s_x35Fvg6TI82rmuoeJsnvf/view?usp=sharing"
+    },
+    {
+      "id": "cls_uxjz7doft",
+      "subjectId": "sub_dmz02ufnk",
+      "chapter": "Basics of Economy",
+      "title": "Class 1",
+      "url": "https://player.mediadelivery.net/play/808439/8efd2ea1-ca23-43d5-9f8c-8bd2a75ca2da",
+      "notesUrl": "https://drive.google.com/file/d/1WaNoTgPrheFmreAUyxIywj-twSXpOXK_/view?usp=sharing"
+    },
+    {
+      "id": "cls_da7mo517u",
+      "subjectId": "sub_dmz02ufnk",
+      "chapter": "Basics of Economy",
+      "title": "Class 2",
+      "url": "https://player.mediadelivery.net/play/808439/26802c36-59b1-4129-ab43-0bd33284cca3",
+      "notesUrl": "https://drive.google.com/file/d/1tyHpItaMjboDho_hpTXEZ2xhjST5Qlar/view?usp=sharing"
+    },
+    {
+      "id": "cls_sycjj8po8",
+      "subjectId": "sub_dmz02ufnk",
+      "chapter": "Basics of Economy",
+      "title": "Class 3",
+      "url": "https://player.mediadelivery.net/play/808439/726c448c-ce20-431f-9017-cbd20ccb3d70",
+      "notesUrl": "https://drive.google.com/file/d/1UMhMHwn1UiQPQQyGLfTHP9KV4HlhzUSl/view?usp=sharing"
+    },
+    {
+      "id": "cls_58rgx9m86",
+      "subjectId": "sub_dmz02ufnk",
+      "chapter": "Basics of Economy",
+      "title": "Class 4",
+      "url": "https://player.mediadelivery.net/play/808439/3e82ccfd-c7ce-472f-ab5c-661eae0d6ec0",
+      "notesUrl": "https://drive.google.com/file/d/1OIe9i3XqEdO4_qtniWdaH3oRN54gZmZ7/view?usp=sharing"
+    },
+    {
+      "id": "cls_8qowr4lzx",
+      "subjectId": "sub_dmz02ufnk",
+      "chapter": "Basics of Economy",
+      "title": "Class 5",
+      "url": "https://player.mediadelivery.net/play/808439/c48e5863-cfb2-4ac9-9dfa-64060f29dd63",
+      "notesUrl": ""
+    },
+    {
+      "id": "cls_mt0r3c0xw",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Strategy",
+      "title": "Strategy",
+      "url": "https://player.mediadelivery.net/play/808439/697599f8-aff7-4263-93aa-b5051227cafc",
+      "notesUrl": "https://drive.google.com/file/d/1_ad3BllkrKMYVaKIHAAX_aZbmtj5x7WP/view?usp=sharing"
+    },
+    {
+      "id": "cls_ag7u1jua2",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Calculation Booster",
+      "title": "CALCULATION BOOSTER - 1",
+      "url": "https://player.mediadelivery.net/play/808439/06f8d5b2-512e-475b-9e70-c26d403fd6cb",
+      "notesUrl": "https://drive.google.com/file/d/1cOCx47FoYo9_djNqKq-HRISNFUoptHA9/view?usp=sharing"
+    },
+    {
+      "id": "cls_bgf247hl5",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Calculation Booster",
+      "title": "CALCULATION BOOSTER - 2",
+      "url": "https://player.mediadelivery.net/play/808439/d8ed0466-139c-43c0-8f7c-21b8639e0389",
+      "notesUrl": "https://drive.google.com/file/d/1KjqLtoe9WudTT2cEBcu2qLFDp6RgM6v0/view?usp=sharing"
+    },
+    {
+      "id": "cls_kmnk6rlhh",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Calculation Booster",
+      "title": "CALCULATION BOOSTER - 3",
+      "url": "https://player.mediadelivery.net/play/808439/63033749-e408-4649-a201-5b6088973210",
+      "notesUrl": "https://drive.google.com/file/d/1Fv2pCqWspiLZHPakqB4z21tkj7zSvalh/view?usp=sharing"
+    },
+    {
+      "id": "cls_vz205mot2",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 1",
+      "url": "https://player.mediadelivery.net/play/808439/ea76598a-61b6-4ce6-9df7-d3d7f9325c1c",
+      "notesUrl": "https://drive.google.com/file/d/195SzCSXgZ0yKEMXQPGF1UrkeBRp75DFS/view?usp=sharing"
+    },
+    {
+      "id": "cls_g8rcwjdgk",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 2",
+      "url": "https://player.mediadelivery.net/play/808439/0d3eecac-507a-4653-8b60-743e737ec94d",
+      "notesUrl": "https://drive.google.com/file/d/1Kvn2_4jqfqu7aroNN49Bsausptrqjg4V/view?usp=sharing"
+    },
+    {
+      "id": "cls_fihdito0v",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 3",
+      "url": "https://player.mediadelivery.net/play/808439/be9ca0e4-d7af-4965-be51-a96d1b77dad1",
+      "notesUrl": "https://drive.google.com/file/d/1iT3W1A8uJ1m8wuCKpyAza6JJLdX7gl75/view?usp=sharing"
+    },
+    {
+      "id": "cls_9ao6w41b0",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 4",
+      "url": "https://player.mediadelivery.net/play/808439/14372554-9e97-4fb4-a462-b4e61d8e31f7",
+      "notesUrl": "https://drive.google.com/file/d/1YYJRaG3tT3X2fmHqO9mV1ceVSlsMnby6/view?usp=sharing"
+    },
+    {
+      "id": "cls_fcwrtlrmx",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 5",
+      "url": "https://player.mediadelivery.net/play/808439/19b9c26d-66c3-4f1d-84e5-347adfd02c63",
+      "notesUrl": "https://drive.google.com/file/d/1GH7YLr-GvOM2QTFB7e4mBVlooowvYD4W/view?usp=sharing"
+    },
+    {
+      "id": "cls_lapck3wxp",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 6",
+      "url": "https://player.mediadelivery.net/play/808439/31fe1ead-a3e1-49fe-9eb6-6995a133e21d",
+      "notesUrl": "https://drive.google.com/file/d/1KI5beqi-SkNGOoZym0IBSyALEVYO1L1u/view?usp=sharing"
+    },
+    {
+      "id": "cls_bmp22qrbc",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 7",
+      "url": "https://player.mediadelivery.net/play/808439/682994eb-8466-49f6-93b8-96c553de9e0b",
+      "notesUrl": "https://drive.google.com/file/d/11RcgE9zjUtbQCXsa6l071HiYBgIkjlb7/view?usp=sharing"
+    },
+    {
+      "id": "cls_fx4csyfy9",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 8",
+      "url": "https://player.mediadelivery.net/play/808439/946a1d7c-cf07-4240-be24-6a384dd006f3",
+      "notesUrl": "https://drive.google.com/file/d/17A-yWV0xopHZLT_JXW1cWfm0b8DIBtvu/view?usp=sharing"
+    },
+    {
+      "id": "cls_rwmzehxre",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 9",
+      "url": "https://player.mediadelivery.net/play/808439/268cd0cd-474e-4482-82b8-574c284d211d",
+      "notesUrl": "https://drive.google.com/file/d/1jHAWmh06jfK8JINWYJEyn-RMAIBcER10/view?usp=sharing"
+    },
+    {
+      "id": "cls_lzlhddoix",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 10",
+      "url": "https://player.mediadelivery.net/play/808439/3bd118d8-9086-4ef5-84ff-3b9c61124acb",
+      "notesUrl": "https://drive.google.com/file/d/1BWbCkgTCWm9q6V15-sxpxFvNiE1My_36/view?usp=sharing"
+    },
+    {
+      "id": "cls_b063ec0hb",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 11",
+      "url": "https://player.mediadelivery.net/play/808439/7c3ba44a-1869-4764-984b-05514eb41382",
+      "notesUrl": "https://drive.google.com/file/d/1ZjHPLbUIJmwuQGYFHunHaPOSW_81zZlD/view?usp=sharing"
+    },
+    {
+      "id": "cls_b0zubcggh",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Percentage",
+      "title": "PERCENTAGE - 12",
+      "url": "https://player.mediadelivery.net/play/808439/6a6432b6-f4f8-42e2-80f6-1e33df3eba8e",
+      "notesUrl": "https://drive.google.com/file/d/1wE8SKaEVjOJstE05ZrzFzXvqd6-7fv03/view?usp=sharing"
+    },
+    {
+      "id": "cls_uqabw90rr",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 1",
+      "url": "https://player.mediadelivery.net/play/808439/853db18a-957a-4664-90b3-74d217ac8c91",
+      "notesUrl": "https://drive.google.com/file/d/1y7DGOmlBY9wUVDlViCGLO_yLXvl2_gso/view?usp=sharing"
+    },
+    {
+      "id": "cls_71f36f4t7",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 2",
+      "url": "https://player.mediadelivery.net/play/808439/ac9aeb58-7118-449f-98b9-308ed89df0ff",
+      "notesUrl": "https://drive.google.com/file/d/1DHosSull3qWXq3GYGr5xf6-naLEeNXrS/view?usp=sharing"
+    },
+    {
+      "id": "cls_clx566q7z",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 3",
+      "url": "https://player.mediadelivery.net/play/808439/8e6d97a0-6ea8-482a-a42a-4172b6aee624",
+      "notesUrl": "https://drive.google.com/file/d/1GYsU8w5d_KpttIOJ6MtXkq3169Q1foaG/view?usp=sharing"
+    },
+    {
+      "id": "cls_wa5q4pkpc",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 4",
+      "url": "https://player.mediadelivery.net/play/808439/e98ca46a-80cd-45b5-afc5-06136194d091",
+      "notesUrl": "https://drive.google.com/file/d/1NvwALVJeG2gNNuNtgk06evQy1V-_DjQC/view?usp=sharing"
+    },
+    {
+      "id": "cls_cd7rhqlk9",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 5",
+      "url": "https://player.mediadelivery.net/play/808439/7cb99652-2adc-4923-b03a-ce184381246e",
+      "notesUrl": "https://drive.google.com/file/d/1VruXx_Rr7WeUe_w3RHdLBZrLwjF-MZTB/view?usp=sharing"
+    },
+    {
+      "id": "cls_s96edc2iv",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Ratio & Proportion",
+      "title": "RATIO & PROPORTION - 6",
+      "url": "https://player.mediadelivery.net/play/808439/7585bd68-374a-445c-b64f-8514950d18b2",
+      "notesUrl": "https://drive.google.com/file/d/1rN1PYux7SNxbVDYNcP6BVfqBleDKfrkF/view?usp=sharing"
+    },
+    {
+      "id": "cls_qhq4vuxcw",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Simple Interest",
+      "title": "SIMPLE INTEREST - 1",
+      "url": "https://player.mediadelivery.net/play/808439/95aa2bb8-1865-4669-b13f-4ca1d36618a6",
+      "notesUrl": "https://drive.google.com/file/d/1IAwGt3d1INNmW-HBVWhqGBGRBJ3OtnQD/view?usp=sharing"
+    },
+    {
+      "id": "cls_q2w4bqaj9",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Simple Interest",
+      "title": "SIMPLE INTEREST - 2",
+      "url": "https://player.mediadelivery.net/play/808439/ecb96049-b270-4352-8011-a1f51814eeb7",
+      "notesUrl": "https://drive.google.com/file/d/1b1sEojgxi01dvkc50f_wE1aC13DHf8qK/view?usp=sharing"
+    },
+    {
+      "id": "cls_090wgwx4k",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Simple Interest",
+      "title": "SIMPLE INTEREST - 3",
+      "url": "https://player.mediadelivery.net/play/808439/64b5d237-7ce1-4890-a41f-88cfe73df8d3",
+      "notesUrl": "https://drive.google.com/file/d/1k1us8McJE5HIbs0U8gpv7roRf6Z7j5it/view?usp=sharing"
+    },
+    {
+      "id": "cls_okfvzn993",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Simple Interest",
+      "title": "SIMPLE INTEREST - 4",
+      "url": "https://player.mediadelivery.net/play/808439/ddc01ece-113b-4065-a9e6-db40d4d94d35",
+      "notesUrl": "https://drive.google.com/file/d/1UeDsmMRXb2AOyixd8zvngDJC0cCRuriS/view?usp=sharing"
+    },
+    {
+      "id": "cls_743p8tva9",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Simple Interest",
+      "title": "SIMPLE INTEREST - 5",
+      "url": "https://player.mediadelivery.net/play/808439/45187232-6e71-4f9c-a886-91974bb0a7ec",
+      "notesUrl": "https://drive.google.com/file/d/1_1acp9glnFL2fU00Dh0hKEyRUj6Y7LTV/view?usp=sharing"
+    },
+    {
+      "id": "cls_i5h0m2vel",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 1",
+      "url": "https://player.mediadelivery.net/play/808439/b62c1026-78c0-4ce7-be56-95840fed787c",
+      "notesUrl": "https://drive.google.com/file/d/1o_cD3cSzSXt90tsga3L7Pcmx05rOVPbe/view?usp=sharing"
+    },
+    {
+      "id": "cls_u5ay72k76",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 2",
+      "url": "https://player.mediadelivery.net/play/808439/5f50f7cf-e1f2-44f3-be0c-bd306e22e8a7",
+      "notesUrl": "https://drive.google.com/file/d/1cfAskI9ktPR6I0UA-K7YPBJ85dcDkMT7/view?usp=sharing"
+    },
+    {
+      "id": "cls_el97w3z9a",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 3",
+      "url": "https://player.mediadelivery.net/play/808439/4d89da84-8c36-4bf5-9c90-7c53661064b1",
+      "notesUrl": "https://drive.google.com/file/d/16_kf8Y6eHp3VpXuthVIoF-s-7jbrCXJn/view?usp=sharing"
+    },
+    {
+      "id": "cls_fo6pwgdef",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 4",
+      "url": "https://player.mediadelivery.net/play/808439/b02029b5-f81b-4762-b992-3cb9aa943c1a",
+      "notesUrl": "https://drive.google.com/file/d/1pr7KxPxccag-LX2ePmVS_xaes5HwntcD/view?usp=sharing"
+    },
+    {
+      "id": "cls_lh8qh0guq",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 5",
+      "url": "https://player.mediadelivery.net/play/808439/54fc0ae9-8adb-4bc9-ab61-22ad27f886b3",
+      "notesUrl": "https://drive.google.com/file/d/1mj-sY-mCSHYyl9F11-mlIGnluegs3zxx/view?usp=sharing"
+    },
+    {
+      "id": "cls_cy41sinpe",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Compound Interest",
+      "title": "COMPOUND INTEREST - 6",
+      "url": "https://player.mediadelivery.net/play/808439/21098358-baf7-4802-b61a-ca344b27f989",
+      "notesUrl": "https://drive.google.com/file/d/1dt3mKIttC0-_ofCRZn6tT7QT2il_r1DS/view?usp=sharing"
+    },
+    {
+      "id": "cls_r4tiwvaxc",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Installment",
+      "title": "INSTALLMENT - 1",
+      "url": "https://player.mediadelivery.net/play/808439/527f18d7-5db1-451b-8894-4776f15c9e06",
+      "notesUrl": "https://drive.google.com/file/d/1CqMaANvWbpqyZceXAHky83oeE3Hkg02Q/view?usp=sharing"
+    },
+    {
+      "id": "cls_kwggdcwhy",
+      "subjectId": "sub_wz0jkyjc5",
+      "chapter": "Installment",
+      "title": "INSTALLMENT - 2",
+      "url": "https://player.mediadelivery.net/play/808439/7ed9b224-2dcc-4cab-aeb8-33936c4d08d7",
+      "notesUrl": "https://drive.google.com/file/d/15363uaHUapEiiFfDSwcMZWP_KzOG-beu/view?usp=sharing"
+    }
+  ]
+};
+</script>
+
+<script>
+// --- CORE APP STATE ---
+const ACCESS_DURATION_MS = 24 * 60 * 60 * 1000;
+let isAdmin = false;
+let currentView = 'courses'; 
+let activeCourseId = null;
+let activeSubjectId = null;
+let completedClasses = JSON.parse(localStorage.getItem('rw_completed_classes') || '{}');
+let lastWatched = JSON.parse(localStorage.getItem('rw_last_watched') || 'null');
+let liveTimers = {};
+
+// Sync database
+let db = window.ROYAL_DATA;
+if(!db.tests) db.tests = [];
+
+// --- SECRET ADMIN LOGIN ---
+let secretClickCount = 0;
+let secretClickTimer;
+function secretAdminLogin() {
+    secretClickCount++;
+    clearTimeout(secretClickTimer);
+    secretClickTimer = setTimeout(() => { secretClickCount = 0; }, 2000);
+    if(secretClickCount >= 5) {
+        document.getElementById('loginModal').style.display = 'flex';
+        secretClickCount = 0;
+    }
+}
+
+// --- SECURITY & UTILS ---
+function disableShortcuts(e) {
+    if(e.ctrlKey && ['u','s','c','p','i','j'].includes(e.key.toLowerCase())) { e.preventDefault(); return false; }
+    if(e.key === 'F12') { e.preventDefault(); return false; }
+}
+function makeDirectLink(url) {
+    if(!url) return '';
+    let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    return match ? `https://drive.google.com/uc?export=download&id=${match[1]}` : url;
+}
+function generateId() { return Math.random().toString(36).substr(2, 9); }
+function esc(s){return String(s || '').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+
+function openExternalLink(e, url) {
+    if (window.AndroidBridge && window.AndroidBridge.openExternal) {
+        e.preventDefault(); window.AndroidBridge.openExternal(url);
+    }
+}
+function dismissCommunityPopup() {
+    document.getElementById('communityPopup').style.display = 'none';
+    sessionStorage.setItem('rw_comm_seen', '1');
+}
+
+// --- FOOLPROOF COURSE SPECIFIC AD LOCK SYSTEM ---
+function initCourseAdCheck() {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    let unlockedCourseId = null;
+
+    if (hash.includes('unlock=')) {
+        unlockedCourseId = hash.split('unlock=')[1].split('&')[0];
+    } else if (search.includes('unlock=')) {
+        unlockedCourseId = new URLSearchParams(search).get('unlock');
+    } else if (search.includes('unlock_course=')) {
+        unlockedCourseId = new URLSearchParams(search).get('unlock_course');
+    }
+    
+    if(unlockedCourseId) {
+        // Anti-Bypass Security Check: Make sure the user actually clicked the 'Unlock' button first
+        let intentTime = localStorage.getItem('ad_intent_' + unlockedCourseId);
+        
+        if (intentTime) {
+            let diff = Date.now() - parseInt(intentTime);
+            // Allow a maximum of 2 hours to complete the ad
+            if (diff < 2 * 60 * 60 * 1000) { 
+                let unlocks = JSON.parse(localStorage.getItem('rw_course_unlocks') || '{}');
+                unlocks[unlockedCourseId] = Date.now() + ACCESS_DURATION_MS;
+                localStorage.setItem('rw_course_unlocks', JSON.stringify(unlocks));
+                
+                // Clear the intent so the link can't be reused indefinitely
+                localStorage.removeItem('ad_intent_' + unlockedCourseId);
+                
+                if(window.confetti) confetti({particleCount: 150, spread: 80, origin: { y: 0.6 }});
+                setTimeout(() => alert("✅ Success! Course unlocked for 24 hours."), 500);
+            } else {
+                alert("⏳ Timeout! You took too long to complete the ad. Please click Unlock and try again.");
+            }
+        } else {
+            // Bypass Attempt Detected!
+            alert("🚨 SECURITY CHECK FAILED 🚨\n\nAd bypass detected. You cannot unlock the course using a direct or shared link.\n\nPlease click the 'Unlock Now' button on the course and complete the ad process properly.");
+        }
+        
+        // Clean URL to prevent infinite re-unlocks on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    const pill = document.getElementById('accessPill');
+    if(!db.config.adsEnabled) {
+        pill.innerText = "✦ DIRECT ACCESS";
+        pill.style.color = "#2ecc71";
+    } else {
+        pill.innerText = "🔒 SYSTEM ACTIVE";
+        pill.style.color = "#e8bd62";
+    }
+}
+
+function isCourseUnlocked(courseId) {
+    if(isAdmin || !db.config.adsEnabled) return true;
+    let unlocks = JSON.parse(localStorage.getItem('rw_course_unlocks') || '{}');
+    const expiry = unlocks[courseId];
+    return expiry && parseInt(expiry) > Date.now();
+}
+
+function startCourseUnlock(courseId) {
+    const course = db.courses.find(c => c.id === courseId);
+    if(course && course.adLink) {
+        // ADMIN MISTAKE PREVENTION: Check if admin pasted their own site's URL instead of a short link
+        // UPDATED: Now it checks if the link is a valid format WITHOUT throwing an error if it's a short link
+        // It ONLY blocks if you paste your OWN site URL by mistake.
+        if(course.adLink.includes(window.location.hostname) && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            alert("❌ ADMIN SETUP ERROR:\n\nAapne Admin panel me galti se apni hi website ka target link daal diya hai, isiliye ads nahi chal rahe!\n\nYahan ShrinkMe ka chhota link aayega (jaise https://shrinkme.click/JQKJasM).\n\nKripya Course Edit karke wahan sahi Short-Link paste karein.");
+            return;
+        }
+        
+        // Set Intent Timestamp for Unskippable Feature
+        localStorage.setItem('ad_intent_' + courseId, Date.now());
+        
+        window.location.href = course.adLink;
+    } else {
+        alert("Admin has not set an unlock link for this course yet.");
+    }
+}
+
+function clearAllTimers() {
+    for (let id in liveTimers) { clearInterval(liveTimers[id]); }
+    liveTimers = {};
+}
+
+function startCountdownTimer(elementId, expiryTime, courseId) {
+    if(liveTimers[courseId]) clearInterval(liveTimers[courseId]);
+    
+    const updateTimer = () => {
+        const el = document.getElementById(elementId);
+        if(!el) { clearInterval(liveTimers[courseId]); return; }
+        
+        const now = Date.now();
+        const diff = expiryTime - now;
+        
+        if (diff <= 0) {
+            clearInterval(liveTimers[courseId]);
+            showCourses(); 
+            return;
+        }
+        
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        el.innerText = `⏳ ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} Left`;
+    };
+    
+    updateTimer();
+    liveTimers[courseId] = setInterval(updateTimer, 1000);
+}
+
+// --- RENDERING & NAVIGATION ---
+const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const lazyImage = entry.target;
+            if(lazyImage.dataset.bg) {
+                lazyImage.style.backgroundImage = `url('${lazyImage.dataset.bg}')`;
+                lazyImage.classList.remove("skeleton");
+            }
+            observer.unobserve(lazyImage);
+        }
+    });
+});
+
+function goBack() {
+    if(currentView === 'classes') showSubjects(activeCourseId);
+    else if(currentView === 'subjects') showCourses();
+}
+
+function switchView(viewName, title) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    void document.body.offsetWidth; 
+    document.getElementById(`view-${viewName}`).classList.add('active');
+    
+    document.getElementById('tabCourses').classList.toggle('active', viewName !== 'tests');
+    document.getElementById('tabTests').classList.toggle('active', viewName === 'tests');
+    
+    document.getElementById('btnBack').style.display = (viewName === 'subjects' || viewName === 'classes') ? 'block' : 'none';
+    document.getElementById('classSearchInput').style.display = (viewName === 'classes') ? 'block' : 'none';
+    document.getElementById('navTitle').innerText = title;
+    currentView = viewName;
+    checkContinueBanner();
+}
+
+function checkContinueBanner() {
+    const banner = document.getElementById('continueLearningBanner');
+    if (currentView === 'courses' && lastWatched && lastWatched.classId && !sessionStorage.getItem('rw_banner_dismissed')) {
+        const cls = db.classes.find(c => c.id === lastWatched.classId);
+        if (cls) {
+            document.getElementById('clClassTitle').innerText = cls.title;
+            banner.style.display = 'flex';
+            return;
+        }
+    }
+    banner.style.display = 'none';
+}
+
+function dismissContinueBanner() {
+    document.getElementById('continueLearningBanner').style.display = 'none';
+    sessionStorage.setItem('rw_banner_dismissed', '1');
+}
+
+function resumeLastClass() {
+    if(lastWatched && lastWatched.subjectId && lastWatched.classId) {
+        const sub = db.subjects.find(s => s.id === lastWatched.subjectId);
+        if(sub) {
+            activeCourseId = sub.courseId;
+            if(isCourseUnlocked(activeCourseId)) {
+                showClasses(sub.id);
+                playVideo(lastWatched.classId);
+            } else {
+                alert("Please unlock the course first to resume.");
+            }
+        }
+    }
+}
+
+function toggleClassCompletion(classId, e) {
+    if(e) e.stopPropagation();
+    if(completedClasses[classId]) {
+        delete completedClasses[classId];
+    } else {
+        completedClasses[classId] = true;
+        confetti({particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#e8bd62', '#2ecc71', '#6ea8ff']});
+    }
+    localStorage.setItem('rw_completed_classes', JSON.stringify(completedClasses));
+    if(currentView === 'classes') {
+        showClasses(activeSubjectId);
+    }
+}
+
+function getSubjectProgress(subId) {
+    const clsList = db.classes.filter(c => c.subjectId === subId);
+    if(clsList.length === 0) return 0;
+    const completed = clsList.filter(c => completedClasses[c.id]).length;
+    return Math.round((completed / clsList.length) * 100);
+}
+
+function showCourses() {
+    clearAllTimers();
+    const grid = document.getElementById('coursesGrid');
+    if(db.courses.length === 0) { grid.innerHTML = '<div class="empty">Koi course nahi hai.</div>'; }
+    else {
+        grid.innerHTML = db.courses.map(c => {
+            const unlocked = isCourseUnlocked(c.id);
+            const unlocks = JSON.parse(localStorage.getItem('rw_course_unlocks') || '{}');
+            const expiry = unlocks[c.id];
+            
+            let thumbLockClass = '';
+            let actionBtnHtml = `<button class="btn-start-learning" onclick="handleCourseClick('${c.id}', ${c.comingSoon})">▶ Start Learning</button>`;
+            let timerHtml = '';
+
+            // If system is active and course is locked
+            if (db.config.adsEnabled && !isAdmin && !unlocked) {
+                thumbLockClass = 'locked-thumb';
+                actionBtnHtml = `<button class="btn-start-learning btn-unlock-course" onclick="startCourseUnlock('${c.id}')" style="background:linear-gradient(90deg,#2ecc71,#27ae60); color:#fff; box-shadow:0 4px 15px rgba(46,204,113,0.4);">🚀 Unlock Now (24h Pass)</button>`;
+            } 
+            // If system is active and course IS unlocked, show timer
+            else if (db.config.adsEnabled && unlocked && !isAdmin && expiry) {
+                const timerId = `timer_${c.id}`;
+                timerHtml = `<div class="countdown-timer" id="${timerId}">⏳ --:--:-- Left</div>`;
+                setTimeout(() => startCountdownTimer(timerId, expiry, c.id), 50);
+            }
+
+            return `
+            <div class="course-card">
+                <div class="c-thumb skeleton ${thumbLockClass}" data-bg="${esc(c.thumb)}">
+                    ${c.comingSoon ? '<div class="badge-soon">⏳ COMING SOON</div>' : ''}
+                </div>
+                <div class="c-info">
+                    ${timerHtml}
+                    <h3 class="c-title">${esc(c.title)}</h3>
+                    <p class="c-meta">${c.id === 'crs_reasoning60' ? 'Special Batch' : db.subjects.filter(s=>s.courseId===c.id).length + ' Subjects'}</p>
+                    ${actionBtnHtml}
+                </div>
+                ${isAdmin ? `
+                    <div class="admin-controls" style="padding:0 15px 15px;">
+                        <button class="admin-btn" onclick="editCourse('${c.id}')">✏ Edit</button>
+                        <button class="admin-btn del" onclick="delData('courses','${c.id}')">🗑 Del</button>
+                    </div>` : ''}
+            </div>
+        `}).join('');
+        document.querySelectorAll('.c-thumb').forEach(el => lazyImageObserver.observe(el));
+    }
+    switchView('courses', 'All Courses');
+}
+
+function handleCourseClick(id, isSoon) {
+    if(!isCourseUnlocked(id)) {
+        startCourseUnlock(id);
+        return;
+    }
+
+    const course = db.courses.find(c => c.id === id);
+    if(course && course.id === 'crs_reasoning60') {
+        window.location.href = '/reasoning-spl-60.html';
+        return;
+    }
+    if(isAdmin || !isSoon) showSubjects(id); else alert("⏳ Yeh Course abhi launch nahi hua hai.");
+}
+
+function showSubjects(courseId) {
+    if(!isCourseUnlocked(courseId)) { showCourses(); return; }
+
+    activeCourseId = courseId;
+    const course = db.courses.find(c => c.id === courseId);
+    const subs = db.subjects.filter(s => s.courseId === courseId);
+    const grid = document.getElementById('subjectsGrid');
+    
+    if(subs.length === 0) { grid.innerHTML = '<div class="empty">Is course mein koi subject nahi hai.</div>'; }
+    else {
+        grid.innerHTML = subs.map(s => {
+            const prog = getSubjectProgress(s.id);
+            return `
+            <div class="sub-card" onclick="showClasses('${s.id}')">
+                <div class="sub-info">
+                    <h4 class="sub-title">${esc(s.title)}</h4>
+                    <p class="sub-count">${db.classes.filter(c=>c.subjectId===s.id).length} Classes</p>
+                </div>
+                <div class="sub-progress-wrap">
+                    <div class="sub-progress-bar" style="width:${prog}%"></div>
+                </div>
+                ${isAdmin ? `
+                    <div class="admin-controls" style="margin-left:15px;" onclick="event.stopPropagation();">
+                        <button class="admin-btn" onclick="editSubject('${s.id}')">✏ Edit</button>
+                        <button class="admin-btn del" onclick="delData('subjects','${s.id}')">🗑 Del</button>
+                    </div>` : ''}
+            </div>
+        `}).join('');
+    }
+    switchView('subjects', course ? course.title : 'Subjects');
+}
+
+function showClasses(subId) {
+    activeSubjectId = subId;
+    const sub = db.subjects.find(s => s.id === subId);
+    if(sub && !isCourseUnlocked(sub.courseId)) { showCourses(); return; }
+
+    document.getElementById('classSearchInput').value = '';
+    const clsList = db.classes.filter(c => c.subjectId === subId);
+    
+    const prog = getSubjectProgress(subId);
+    let viewHeader = `
+        <div style="background:rgba(27, 42, 64, 0.5); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #263244;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; color:var(--gold2); font-weight:bold;">
+                <span>Subject Progress</span>
+                <span id="sub_prog_txt_${subId}">${prog}%</span>
+            </div>
+            <div class="sub-progress-wrap" style="margin:0; width:100%; height:8px; background:#111722;">
+                <div class="sub-progress-bar" id="sub_prog_${subId}" style="width:${prog}%"></div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('classesGrid').innerHTML = viewHeader;
+    renderClassCards(clsList, true);
+    switchView('classes', sub ? sub.title : 'Classes');
+}
+
+function filterClasses() {
+    const q = (document.getElementById('classSearchInput').value || '').toLowerCase().trim();
+    const all = db.classes.filter(c => c.subjectId === activeSubjectId);
+    renderClassCards(q ? all.filter(c => c.title.toLowerCase().includes(q)) : all, false);
+}
+
+function renderClassCards(clsList, append = false) {
+    const grid = document.getElementById('classesGrid');
+    
+    if(!append) {
+        const headerHtml = grid.firstElementChild && grid.firstElementChild.innerHTML.includes('Subject Progress') ? grid.firstElementChild.outerHTML : '';
+        grid.innerHTML = headerHtml;
+    }
+
+    if(clsList.length === 0) { 
+        grid.innerHTML += '<div class="empty">Koi lecture nahi mila.</div>'; 
+        return; 
+    }
+    
+    const grouped = {};
+    clsList.forEach(c => {
+        const chap = c.chapter || 'General Lectures';
+        if(!grouped[chap]) grouped[chap] = [];
+        grouped[chap].push(c);
+    });
+
+    let finalHtml = '';
+    for(const chapter in grouped) {
+        finalHtml += `<div class="chapter-title">${esc(chapter)}</div>`;
+        
+        finalHtml += grouped[chapter].map((c, i) => {
+            const isDone = !!completedClasses[c.id];
+            return `
+                <div class="class-card ${isDone ? 'completed' : ''}">
+                    <div class="class-top">
+                        <span class="class-num ${isDone ? 'completed' : ''}">Lec ${String(i+1).padStart(2,'0')}</span>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                        <h4 class="class-title">${esc(c.title)}</h4>
+                        <button class="mark-done-circle ${isDone ? 'done' : ''}" onclick="toggleClassCompletion('${c.id}', event)" title="Mark as Completed">
+                            ${isDone ? '✓' : ''}
+                        </button>
+                    </div>
+                    
+                    <div class="class-actions">
+                        <button class="btn-play" onclick="playVideo('${c.id}')">▶ Play</button>
+                        ${c.notesUrl 
+                            ? `<a href="${makeDirectLink(c.notesUrl)}" target="_blank" class="btn-notes" title="Download Notes">Notes</a>`
+                            : ''
+                        }
+                    </div>
+                    ${isAdmin ? `
+                        <div class="admin-controls">
+                            <button class="admin-btn" onclick="editClass('${c.id}')">✏ Edit</button>
+                            <button class="admin-btn del" onclick="delData('classes','${c.id}')">🗑 Del</button>
+                        </div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    grid.innerHTML += finalHtml;
+}
+
+// --- TESTS SECTION ---
+function showTests() {
+    const grid = document.getElementById('testsGrid');
+    if(!db.tests || db.tests.length === 0) { grid.innerHTML = '<div class="empty">Koi test available nahi hai.</div>'; }
+    else {
+        grid.innerHTML = db.tests.map(t => `
+            <div class="test-card">
+                <h3 class="test-title">${esc(t.title)}</h3>
+                <span class="test-date">📅 ${esc(t.date)}</span>
+                <a href="${esc(t.link)}" class="btn-test">Start Test 📝</a>
+                ${isAdmin ? `
+                    <div class="admin-controls" style="padding-top:10px;">
+                        <button class="admin-btn" onclick="editTest('${t.id}')">✏ Edit</button>
+                        <button class="admin-btn del" onclick="delData('tests','${t.id}')">🗑 Del</button>
+                    </div>` : ''}
+            </div>
+        `).join('');
+    }
+    switchView('tests', 'Live Tests');
+}
+
+// --- PLAYER ---
+function playVideo(classIdOrUrl) {
+    let cls = db.classes.find(c => c.id === classIdOrUrl);
+    let title = cls ? cls.title : 'Lecture';
+    let url = cls ? cls.url : classIdOrUrl;
+
+    document.getElementById("playerTitle").innerText = title;
+    const iframe = document.getElementById("videoFrame");
+    
+    if(cls) {
+        lastWatched = { classId: cls.id, subjectId: cls.subjectId, timestamp: Date.now() };
+        localStorage.setItem('rw_last_watched', JSON.stringify(lastWatched));
+        sessionStorage.removeItem('rw_banner_dismissed'); 
+    }
+
+    iframe.src = url.includes("drive.google.com") ? url.replace(/\/view.*/, '/preview') : url;
+    document.getElementById("playerModal").style.display = "flex";
+}
+function closePlayer() {
+    document.getElementById("videoFrame").src = ""; 
+    document.getElementById("playerModal").style.display = "none";
+}
+
+// --- ADMIN SYSTEM ---
+function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+function verifyAdmin() {
+    if(btoa(document.getElementById("adminPass").value) === db.config.adminPass) {
+        isAdmin = true; closeModals(); document.getElementById("adminPass").value = ""; 
+        document.getElementById("adminBar").style.display = "flex"; refreshCurrentView();
+    } else alert("Wrong Password!");
+}
+function adminLogout() { isAdmin = false; document.getElementById("adminBar").style.display = "none"; refreshCurrentView(); }
+function refreshCurrentView() {
+    if(currentView === 'courses') showCourses();
+    else if(currentView === 'subjects') showSubjects(activeCourseId);
+    else if(currentView === 'classes') showClasses(activeSubjectId);
+    else if(currentView === 'tests') showTests();
+    initCourseAdCheck();
+}
+
+function delData(collection, id) {
+    if(confirm("Confirm delete?")) {
+        db[collection] = db[collection].filter(x => x.id !== id);
+        if(collection === 'courses') {
+            const subIds = db.subjects.filter(s=>s.courseId===id).map(s=>s.id);
+            db.subjects = db.subjects.filter(s=>s.courseId!==id);
+            db.classes = db.classes.filter(c=>!subIds.includes(c.subjectId));
+        }
+        if(collection === 'subjects') db.classes = db.classes.filter(c=>c.subjectId!==id);
+        refreshCurrentView();
+    }
+}
+function toggleAdInput() {}
+function openSettings() {
+    document.getElementById("setAdminPass").value = "";
+    document.getElementById("setAdsToggle").checked = db.config.adsEnabled;
+    document.getElementById("settingsModal").style.display = "flex";
+}
+function saveSettings() {
+    const np = document.getElementById("setAdminPass").value.trim();
+    if(np) db.config.adminPass = btoa(np);
+    db.config.adsEnabled = document.getElementById("setAdsToggle").checked;
+    closeModals(); refreshCurrentView();
+}
+function openCourseModal() {
+    document.getElementById("courseFormTitle").innerText = "Add Course";
+    document.getElementById("crsId").value = ""; document.getElementById("crsTitle").value = "";
+    document.getElementById("crsThumb").value = ""; document.getElementById("crsSoon").checked = false;
+    document.getElementById("crsAdLink").value = "";
+    document.getElementById("courseModal").style.display = "flex";
+}
+function editCourse(id) {
+    const c = db.courses.find(x=>x.id===id);
+    document.getElementById("courseFormTitle").innerText = "Edit Course";
+    document.getElementById("crsId").value = c.id; document.getElementById("crsTitle").value = c.title;
+    document.getElementById("crsThumb").value = c.thumb; document.getElementById("crsSoon").checked = c.comingSoon;
+    document.getElementById("crsAdLink").value = c.adLink || "";
+    document.getElementById("courseModal").style.display = "flex";
+}
+function saveCourse() {
+    const id = document.getElementById("crsId").value || "crs_" + generateId();
+    const newData = { 
+        id: id, 
+        title: document.getElementById("crsTitle").value.trim(), 
+        thumb: document.getElementById("crsThumb").value.trim(), 
+        comingSoon: document.getElementById("crsSoon").checked,
+        adLink: document.getElementById("crsAdLink").value.trim()
+    };
+    if(!newData.title) return alert("Title required");
+    const idx = db.courses.findIndex(x=>x.id===id);
+    idx >= 0 ? (db.courses[idx] = newData) : db.courses.push(newData);
+    closeModals(); refreshCurrentView();
+}
+function populateCourseDrop(selectId, selectedVal) {
+    document.getElementById(selectId).innerHTML = '<option value="">Select Course...</option>' + db.courses.map(c=>`<option value="${c.id}" ${c.id===selectedVal?'selected':''}>${esc(c.title)}</option>`).join('');
+}
+
+function openSubjectModal() {
+    document.getElementById("subFormTitle").innerText = "Add Subject";
+    document.getElementById("subId").value = ""; document.getElementById("subTitle").value = ""; document.getElementById("subIcon").value = "";
+    populateCourseDrop("subCourseId", activeCourseId); document.getElementById("subjectModal").style.display = "flex";
+}
+function editSubject(id) {
+    const s = db.subjects.find(x=>x.id===id);
+    document.getElementById("subFormTitle").innerText = "Edit Subject";
+    document.getElementById("subId").value = s.id; document.getElementById("subTitle").value = s.title; document.getElementById("subIcon").value = s.icon;
+    populateCourseDrop("subCourseId", s.courseId); document.getElementById("subjectModal").style.display = "flex";
+}
+function saveSubject() {
+    const id = document.getElementById("subId").value || "sub_" + generateId();
+    const newData = { id: id, courseId: document.getElementById("subCourseId").value, title: document.getElementById("subTitle").value.trim(), icon: document.getElementById("subIcon").value.trim() };
+    if(!newData.title || !newData.courseId) return alert("Required");
+    const idx = db.subjects.findIndex(x=>x.id===id);
+    idx >= 0 ? (db.subjects[idx] = newData) : db.subjects.push(newData);
+    closeModals(); refreshCurrentView();
+}
+
+function populateSubjectDropdown(selectedSub) {
+    const cid = document.getElementById("clsCourseId").value;
+    document.getElementById("clsSubjectId").innerHTML = '<option value="">Select Subject...</option>' + db.subjects.filter(s=>s.courseId===cid).map(s=>`<option value="${s.id}" ${s.id===selectedSub?'selected':''}>${esc(s.title)}</option>`).join('');
+}
+
+function openClassModal() {
+    document.getElementById("clsFormTitle").innerText = "Add Class";
+    document.getElementById("clsId").value = ""; document.getElementById("clsTitle").value = ""; 
+    document.getElementById("clsUrl").value = ""; document.getElementById("clsNotes").value = ""; document.getElementById("clsChapter").value = "";
+    populateCourseDrop("clsCourseId", activeCourseId); populateSubjectDropdown(activeSubjectId);
+    document.getElementById("classModal").style.display = "flex";
+}
+function editClass(id) {
+    const c = db.classes.find(x=>x.id===id); const sub = db.subjects.find(s=>s.id===c.subjectId);
+    document.getElementById("clsFormTitle").innerText = "Edit Class";
+    document.getElementById("clsId").value = c.id; document.getElementById("clsTitle").value = c.title;
+    document.getElementById("clsUrl").value = c.url; document.getElementById("clsNotes").value = c.notesUrl || ""; document.getElementById("clsChapter").value = c.chapter || "";
+    populateCourseDrop("clsCourseId", sub ? sub.courseId : ""); populateSubjectDropdown(c.subjectId);
+    document.getElementById("classModal").style.display = "flex";
+}
+function saveClass() {
+    const id = document.getElementById("clsId").value || "cls_" + generateId();
+    const newData = { id: id, subjectId: document.getElementById("clsSubjectId").value, chapter: document.getElementById("clsChapter").value.trim(), title: document.getElementById("clsTitle").value.trim(), url: document.getElementById("clsUrl").value.trim(), notesUrl: document.getElementById("clsNotes").value.trim() };
+    if(!newData.title || !newData.subjectId) return alert("Required");
+    const idx = db.classes.findIndex(x=>x.id===id);
+    idx >= 0 ? (db.classes[idx] = newData) : db.classes.push(newData);
+    closeModals(); refreshCurrentView();
+}
+
+function openTestModal() {
+    document.getElementById("testFormTitle").innerText = "Add Test";
+    document.getElementById("testId").value = ""; document.getElementById("testTitle").value = "";
+    document.getElementById("testLink").value = ""; document.getElementById("testDate").value = "";
+    document.getElementById("testModal").style.display = "flex";
+}
+function editTest(id) {
+    const t = db.tests.find(x=>x.id===id);
+    document.getElementById("testFormTitle").innerText = "Edit Test";
+    document.getElementById("testId").value = t.id; document.getElementById("testTitle").value = t.title;
+    document.getElementById("testLink").value = t.link; document.getElementById("testDate").value = t.date;
+    document.getElementById("testModal").style.display = "flex";
+}
+function saveTest() {
+    const id = document.getElementById("testId").value || "tst_" + generateId();
+    const newData = { id: id, title: document.getElementById("testTitle").value.trim(), link: document.getElementById("testLink").value.trim(), date: document.getElementById("testDate").value.trim() };
+    if(!newData.title || !newData.link) return alert("Title and Link are required");
+    const idx = db.tests.findIndex(x=>x.id===id);
+    idx >= 0 ? (db.tests[idx] = newData) : db.tests.push(newData);
+    closeModals(); refreshCurrentView();
+}
+
+function downloadUpdatedHTML() {
+    const clone = document.documentElement.cloneNode(true);
+    const cloneAdminBar = clone.querySelector("#adminBar"); if(cloneAdminBar) cloneAdminBar.style.display = "none";
+    clone.querySelectorAll(".modal").forEach(m => { if(m.id !== "communityPopup") m.style.display = "none"; });
+    const popupCode = clone.querySelector("#communityPopup"); if(popupCode) popupCode.style.display = "flex";
+    clone.querySelectorAll('.view').forEach(v => v.classList.remove('active')); clone.querySelector('#view-courses').classList.add('active');
+    clone.querySelector('#btnBack').style.display = 'none'; clone.querySelector('#navTitle').innerText = 'All Courses';
+    
+    clone.querySelector('#tabCourses').classList.add('active');
+    clone.querySelector('#tabTests').classList.remove('active');
+    
+    const newScriptBlock = `<script id="appDataScript">\nwindow.ROYAL_DATA = ${JSON.stringify(db, null, 2)};\n<\/script>`;
+    const updatedHTML = clone.outerHTML.replace(/<script id="appDataScript">[\s\S]*?<\/script>/, newScriptBlock);
+    const blob = new Blob(["<!DOCTYPE html>\n<html lang=\"hi\">\n" + updatedHTML], {type: "text/html"});
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "index.html";
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    alert("Saved! Vercel par is 'index.html' ko upload kar dein.");
+}
+
+function updateOnlineStatus() {
+    const badge = document.getElementById('offlineIndicator');
+    if (badge) badge.style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus);
+if (sessionStorage.getItem('rw_comm_seen') === '1') document.getElementById('communityPopup').style.display = 'none';
+
+updateOnlineStatus(); 
+initCourseAdCheck(); 
+showCourses();
+</script>
+
+</body></html>
