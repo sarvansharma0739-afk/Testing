@@ -3,75 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RoyalWorld | Access Key Generator</title>
+<title>RoyalWorld | One-Time Access Key Generator</title>
 <style>
   :root { --bg:#080b12; --panel:#111722; --gold:#e8bd62; --gold2:#f7d98c; --green:#2ecc71; --text:#f4f6fa; --muted:#9ba8bb; }
   * { box-sizing: border-box; }
   body { margin:0; min-height:100vh; display:grid; place-items:center; padding:18px; background:radial-gradient(circle at top, #172235 0%, #080b12 65%); color:var(--text); font-family:system-ui,-apple-system,sans-serif; }
-  .card { width:100%; max-width:430px; background:var(--panel); border:1px solid rgba(232,189,98,0.35); border-radius:22px; padding:28px 22px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.75); }
-  .badge { width:58px; height:58px; margin:0 auto 14px; border-radius:16px; background:linear-gradient(135deg, #f7d98c, #c8912e); color:#0b0f19; display:grid; place-items:center; font-weight:900; font-size:22px; box-shadow:0 8px 25px rgba(232,189,98,0.3); }
-  h1 { margin:0 0 6px; font-size:21px; color:#fff; }
-  p { margin:0 0 20px; color:var(--muted); font-size:13.5px; line-height:1.5; }
-  .key-box { background:#080b12; border:1.5px dashed var(--gold); border-radius:14px; padding:16px; margin-bottom:18px; }
-  .key-label { font-size:11px; text-transform:uppercase; letter-spacing:1.4px; color:var(--gold); font-weight:700; margin-bottom:6px; }
-  .key-val { font-family:monospace; font-size:22px; font-weight:900; letter-spacing:1.5px; color:#fff; word-break:break-all; }
-  .btn { width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; margin-bottom:10px; display:block; text-decoration:none; transition:0.2s; }
+  .card { width:100%; max-width:440px; background:var(--panel); border:1px solid rgba(232,189,98,0.35); border-radius:22px; padding:26px 20px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.75); }
+  .badge { width:56px; height:56px; margin:0 auto 12px; border-radius:16px; background:linear-gradient(135deg, #f7d98c, #c8912e); color:#0b0f19; display:grid; place-items:center; font-weight:900; font-size:21px; box-shadow:0 8px 25px rgba(232,189,98,0.3); }
+  h1 { margin:0 0 6px; font-size:20px; color:#fff; }
+  p { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.5; }
+  .dev-box { text-align:left; margin-bottom:14px; }
+  .dev-box label { display:block; font-size:11px; color:var(--gold2); font-weight:700; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.8px; }
+  .dev-input { width:100%; background:#080b12; border:1px solid #2d3b52; border-radius:10px; padding:11px 12px; color:#fff; font-family:monospace; font-size:14px; outline:none; }
+  .dev-input:focus { border-color:var(--gold); }
+  .key-box { background:#080b12; border:1.5px dashed var(--gold); border-radius:14px; padding:15px; margin-bottom:16px; }
+  .key-label { font-size:11px; text-transform:uppercase; letter-spacing:1.3px; color:var(--gold); font-weight:700; margin-bottom:6px; }
+  .key-val { font-family:monospace; font-size:17px; font-weight:900; letter-spacing:1px; color:#fff; word-break:break-all; }
+  .timer-pill { display:inline-block; margin-top:8px; background:rgba(231, 76, 60, 0.15); border:1px solid rgba(231, 76, 60, 0.4); color:#ff7979; font-size:11px; font-weight:700; padding:3px 10px; border-radius:99px; }
+  .btn { width:100%; border:none; border-radius:12px; padding:13px; font-size:14.5px; font-weight:800; cursor:pointer; margin-bottom:10px; display:block; text-decoration:none; transition:0.2s; }
   .btn-gold { background:linear-gradient(90deg, #e8bd62, #f7d98c); color:#0b0f19; }
   .btn-green { background:linear-gradient(90deg, #2ecc71, #27ae60); color:#fff; }
-  .note { font-size:11.5px; color:var(--muted); margin-top:10px; }
+  .note { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.4; }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="badge">RW</div>
-  <h1>✅ Verification Successful!</h1>
-  <p>Aapki 24-Hour Premium Access Key taiyar hai. Is key ko copy karke <strong>RoyalWorld App</strong> mein paste karein.</p>
+  <h1>✅ Unique Access Key Ready!</h1>
+  <p>Yeh <strong>One-Time Device-Locked Key</strong> sirf aapke phone par 1 baar kaam karegi aur <strong>15 minute</strong> mein expire ho jayegi.</p>
 
-  <div class="key-box">
-    <div class="key-label">Your 24-Hour Access Key</div>
-    <div class="key-val" id="accessKeyText">Generating...</div>
+  <div class="dev-box" id="deviceInputWrap">
+    <label>Your Device ID (Auto-Detected or Paste from App)</label>
+    <input type="text" id="deviceIdField" class="dev-input" placeholder="Paste Device ID from App" oninput="regenerateUniqueKey()">
   </div>
 
-  <button class="btn btn-gold" onclick="copyKey()">📋 Copy Access Key</button>
-  <a id="deepLinkBtn" href="#" class="btn btn-green">🚀 Open App & Unlock Now</a>
-  <div class="note">Note: Agar button se app na khule, toh upar se Key copy karke app mein paste karein.</div>
+  <div class="key-box">
+    <div class="key-label">Your One-Time Key</div>
+    <div class="key-val" id="accessKeyText">Generating...</div>
+    <div class="timer-pill">⏳ Valid for 15 Minutes • Single Use Only</div>
+  </div>
+
+  <button class="btn btn-gold" onclick="copyKey()">📋 Copy Unique Key</button>
+  <a id="deepLinkBtn" href="#" class="btn btn-green">🚀 Open App & Auto-Unlock</a>
+  <div class="note">Har baar ad complete karne par ek bilkul nayi unique key generate hoti hai.</div>
 </div>
 
 <script>
 const SECRET_SALT = "RW_KING_2026_SECURE_KEY_9981";
+const params = new URLSearchParams(window.location.search);
+const batchParam = params.get('b') || '';
 
-function getISTDateString() {
-  const now = new Date();
-  const istOffsetMs = 5.5 * 60 * 60 * 1000;
-  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffsetMs);
-  const y = istDate.getUTCFullYear();
-  const m = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(istDate.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+// Auto-fill Device ID from URL (?d=...) or saved browser storage
+const urlDevId = (params.get('d') || '').trim().toUpperCase();
+if (urlDevId) {
+  localStorage.setItem('rw_last_device_id', urlDevId);
+}
+const savedDevId = urlDevId || localStorage.getItem('rw_last_device_id') || '';
+document.getElementById('deviceIdField').value = savedDevId;
+if (urlDevId) {
+  document.getElementById('deviceInputWrap').style.display = 'none';
 }
 
-async function generateKey() {
-  const dateStr = getISTDateString();
-  const msgBuffer = new TextEncoder().encode(`${SECRET_SALT}:${dateStr}`);
+function randomNonce4() {
+  const arr = new Uint8Array(2);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+async function regenerateUniqueKey() {
+  const devId = (document.getElementById('deviceIdField').value || '').trim().toUpperCase();
+  if (!devId) {
+    document.getElementById('accessKeyText').innerText = "Enter Device ID Above";
+    return;
+  }
+  localStorage.setItem('rw_last_device_id', devId);
+
+  // Exact current epoch seconds in 8-char hex + random 4-char nonce -> ALWAYS unique every single time!
+  const epochSec = Math.floor(Date.now() / 1000);
+  const tsHex = epochSec.toString(16).toUpperCase().padStart(8, '0');
+  const nonce = randomNonce4();
+
+  const payload = `${SECRET_SALT}:${devId}:${tsHex}:${nonce}`;
+  const msgBuffer = new TextEncoder().encode(payload);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hex = hashArray.slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-  const key = `RW-${hex.slice(0,4)}-${hex.slice(4,8)}-${hex.slice(8,12)}`;
+  const sig = hashArray.slice(0, 4).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 
+  const key = `RW-${tsHex}-${nonce}-${sig}`;
   document.getElementById('accessKeyText').innerText = key;
-  const params = new URLSearchParams(window.location.search);
-  const batchParam = params.get('b') || '';
   document.getElementById('deepLinkBtn').href = `royalworld://unlock?key=${encodeURIComponent(key)}&b=${encodeURIComponent(batchParam)}`;
 }
 
 function copyKey() {
   const key = document.getElementById('accessKeyText').innerText;
+  if (!key.startsWith('RW-')) {
+    alert("⚠️ Pehle apna Device ID daalein!");
+    return;
+  }
   navigator.clipboard.writeText(key).then(() => {
-    alert("✅ Key Copied: " + key + "\nAb RoyalWorld App khol kar paste kar dein!");
+    alert("✅ Unique Key Copied: " + key + "\nAb RoyalWorld App khol kar paste kar dein!");
   });
 }
 
-generateKey();
+regenerateUniqueKey();
 </script>
 </body>
 </html>

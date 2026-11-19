@@ -534,17 +534,22 @@ footer { display: none; } /* Cleaner native app feel without web footer */
 <div id="adModal" class="modal" style="display: none;">
     <div class="modal-box" style="text-align:center;">
         <button class="close-modal" onclick="closeModals()">×</button>
-        <h3 class="modal-title" style="font-size:20px; color:#fff;" id="adModalTitle">🔑 Unlock Batch (24h Access)</h3>
+        <div style="display:inline-block; background:rgba(232,189,98,0.15); border:1px solid rgba(232,189,98,0.4); color:var(--gold2); font-size:10.5px; font-weight:800; letter-spacing:1.4px; padding:4px 12px; border-radius:99px; margin-bottom:10px;">24-HOUR ACCESS PASS</div>
+        <h3 class="modal-title" style="font-size:20px; color:#fff; margin-bottom:8px;" id="adModalTitle">Premium Batch</h3>
         <p style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.5;" id="adModalDesc">
             <strong>Step 1:</strong> "Generate Key" par click karke Chrome browser mein verification complete karein.<br>
             <strong>Step 2:</strong> Wahan mili Key copy karke neeche paste karein.<br>
             <span style="color:#2ecc71;">✨ Bonus: 1 Batch unlock karne par saare Mock Tests bhi khul jayenge!</span>
         </p>
-        <button class="btn btn-blue" style="font-size:14px; margin-bottom:14px;" onclick="confirmCourseUnlock()">🌐 Step 1: Generate Access Key</button>
+        <button class="btn btn-blue" style="font-size:14px; margin-bottom:14px;" onclick="confirmCourseUnlock()">🔑 Step 1: Get Access Key</button>
+        <div style="background:rgba(255,255,255,0.04); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:11.5px;">
+            <span style="color:var(--muted);">Device ID: <strong id="modalDeviceIdDisplay" style="color:var(--gold2); font-family:monospace;">Loading...</strong></span>
+            <button type="button" onclick="copyMyDeviceId()" style="background:#263244; color:#fff; border:none; border-radius:6px; padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer;">Copy ID</button>
+        </div>
         <div style="border-top:1px dashed var(--line); padding-top:12px;">
             <div style="font-size:12px; color:var(--gold2); font-weight:700;">Step 2: Paste Generated Key Below</div>
-            <input type="text" id="unlockKeyInput" class="key-input-box" placeholder="RW-XXXX-XXXX-XXXX" autocomplete="off">
-            <button class="btn btn-green" style="font-size:15px;" onclick="verifyAndUnlockWithKey()">🔓 Verify Key &amp; Unlock</button>
+            <input type="text" id="unlockKeyInput" class="key-input-box" placeholder="RW-XXXXXXXX-XXXX-XXXXXXXX" autocomplete="off">
+            <button class="btn btn-green" style="font-size:15px;" onclick="verifyAndUnlockWithKey()">✓ Unlock Batch Now</button>
         </div>
     </div>
 </div>
@@ -654,6 +659,19 @@ footer { display: none; } /* Cleaner native app feel without web footer */
     </div>
 </div>
 
+
+<!-- 10. VIDEO DOWNLOAD QUALITY PICKER (720p / 480p) -->
+<div id="qualityModal" class="modal" style="display: none;">
+    <div class="modal-box" style="text-align:center; max-width:360px;">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <div style="display:inline-block; background:rgba(232,189,98,0.15); border:1px solid rgba(232,189,98,0.4); color:var(--gold2); font-size:10.5px; font-weight:800; letter-spacing:1.2px; padding:4px 10px; border-radius:99px; margin-bottom:8px;">OFFLINE VAULT</div>
+        <h3 class="modal-title" style="font-size:18px; color:#fff; margin-bottom:6px;" id="qModalTitle">Select Video Quality</h3>
+        <p style="color:var(--muted); font-size:12.5px; margin:0 0 16px;">Choose resolution to save inside app:</p>
+        <button class="btn" style="margin-bottom:10px; font-size:14px;" onclick="startQualityDownload('720p')">🎬 720p HD (High Quality)</button>
+        <button class="btn btn-blue" style="font-size:14px;" onclick="startQualityDownload('480p')">⚡ 480p SD (Data Saver)</button>
+    </div>
+</div>
+
 <!-- 9. COMMUNITY POPUP -->
 <div id="communityPopup" class="modal" style="display: flex; z-index: 9999;">
     <div class="modal-box" style="padding:15px; text-align:center; max-width:400px;">
@@ -677,7 +695,8 @@ window.ROYAL_DATA = {
     "adsEnabled": true,
     "adminPass": "",
     "adLink": "https://shrinkme.click/Jm198",
-    "adMobEnabled": false
+    "adMobEnabled": false,
+    "cloudDataUrl": "https://raw.githubusercontent.com/sarvansharma0739-afk/Testing/main/royal_data.enc"
   },
   "testSubjects": [
     {
@@ -1707,13 +1726,17 @@ function openBatchUnlockModal(courseId, isFromTest = false) {
     const descEl = document.getElementById('adModalDesc');
 
     if (isFromTest) {
-        titleEl.innerText = "🔒 Live Tests Locked";
-        descEl.innerHTML = `Live Tests open karne ke liye <strong>koi bhi 1 Batch</strong> unlock karein.<br><br><strong style="color:var(--gold2);">✨ Offer:</strong> Abhi Ad dekhne par <strong>${course ? esc(course.title) : 'Batch'}</strong> aur <strong>Saare Live Tests</strong> 24 Ghante ke liye ek sath khul jayenge!`;
+        titleEl.innerText = "Mock Tests Access Pass";
+        descEl.innerHTML = `Complete a quick verification to activate <strong>24-Hour Unlimited Access</strong> to all Live Mock Tests &amp; Batches.<div style="margin-top:10px; padding:8px 12px; border-radius:10px; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); color:#2ecc71; font-size:12px; font-weight:700;">✨ Includes ${course ? esc(course.title) : 'Batch'} + All Mock Tests</div>`;
     } else {
-        titleEl.innerText = `🔒 ${course ? esc(course.title) : 'Batch Locked'}`;
-        descEl.innerHTML = `Is Batch ko 24 ghante ke liye unlock karne ke liye ek chhota sa Ad dekhein.<br><br><strong style="color:var(--gold2);">✨ Bonus:</strong> Koi bhi 1 Batch unlock karte hi <strong style="color:#2ecc71;">Live Tests Section</strong> automatic Free ho jayega!`;
+        titleEl.innerText = `${course ? esc(course.title) : 'Premium Batch'}`;
+        descEl.innerHTML = `Complete a quick verification to activate <strong>24-Hour Unlimited Access</strong> to all HD lectures &amp; PDF notes.<div style="margin-top:10px; padding:8px 12px; border-radius:10px; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); color:#2ecc71; font-size:12px; font-weight:700;">✨ All Live Mock Tests included free with this pass</div>`;
     }
 
+    const devDisp = document.getElementById('modalDeviceIdDisplay');
+    if (devDisp) {
+        devDisp.innerText = (window.AndroidBridge && window.AndroidBridge.getDeviceId) ? window.AndroidBridge.getDeviceId() : 'WEB_DEVICE';
+    }
     document.getElementById('adModal').style.display = 'flex';
 }
 
@@ -1731,12 +1754,20 @@ function confirmCourseUnlock() {
         return;
     }
 
+    const devId = (window.AndroidBridge && window.AndroidBridge.getDeviceId) ? window.AndroidBridge.getDeviceId() : 'WEB_PREVIEW';
+    // Append device id & batch id if targetAdLink is direct generator or supports query params
+    let finalUrl = targetAdLink;
+    if (finalUrl.includes('key-generator.html')) {
+        const sep = finalUrl.includes('?') ? '&' : '?';
+        finalUrl = `${finalUrl}${sep}d=${encodeURIComponent(devId)}&b=${encodeURIComponent(courseId)}`;
+    }
+
     if (window.AndroidBridge && window.AndroidBridge.openExternal) {
-        window.AndroidBridge.openExternal(targetAdLink);
+        window.AndroidBridge.openExternal(finalUrl);
         return;
     }
 
-    window.location.href = targetAdLink;
+    window.location.href = finalUrl;
 }
 
 window.onRewardedAdCompleted = function() {
@@ -2478,11 +2509,24 @@ function downloadPdfPermanent(url, title) {
     }
 }
 
+let pendingDownloadClass = null;
 function saveClassOffline(classId) {
     const cls = db.classes.find(c => c.id === classId);
     if (!cls) return;
+    pendingDownloadClass = cls;
+    const titleEl = document.getElementById('qModalTitle');
+    if (titleEl) titleEl.innerText = cls.title;
+    document.getElementById('qualityModal').style.display = 'flex';
+}
+
+function startQualityDownload(quality) {
+    if (!pendingDownloadClass) return;
+    const cls = pendingDownloadClass;
     const targetUrl = cls.offlineUrl || cls.url;
-    if (window.AndroidBridge && window.AndroidBridge.saveOfflineVideo) {
+    closeModals();
+    if (window.AndroidBridge && window.AndroidBridge.saveOfflineVideoWithQuality) {
+        window.AndroidBridge.saveOfflineVideoWithQuality(cls.id, cls.title, targetUrl, quality);
+    } else if (window.AndroidBridge && window.AndroidBridge.saveOfflineVideo) {
         window.AndroidBridge.saveOfflineVideo(cls.id, cls.title, targetUrl);
     } else {
         alert("📱 Offline download works inside the RoyalWorld Android App.");
@@ -2532,13 +2576,39 @@ function removeOfflineVaultVideo(classId) {
     }
 }
 
+const RW_ENC_KEY = "RW_ENC_VAULT_2026_#9981_SECRET";
+function decryptCloudPayload(b64Str) {
+    const binStr = atob(b64Str.trim());
+    const keyBytes = new TextEncoder().encode(RW_ENC_KEY);
+    const out = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) {
+        out[i] = binStr.charCodeAt(i) ^ keyBytes[i % keyBytes.length];
+    }
+    return new TextDecoder().decode(out);
+}
+
+// Load cached cloud data immediately on startup for instant offline/online display
+try {
+    const cached = localStorage.getItem('rw_cached_db');
+    if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.courses) db = parsed;
+    }
+} catch (e) {}
+
 async function syncLiveCloudData() {
-    const cloudUrl = db.config.cloudDataUrl || localStorage.getItem('rw_cloud_url');
+    const cloudUrl = (db.config && db.config.cloudDataUrl) || "https://raw.githubusercontent.com/sarvansharma0739-afk/Testing/main/royal_data.enc";
     if (!cloudUrl || !navigator.onLine) return;
     try {
         const res = await fetch(cloudUrl + "?t=" + Date.now());
         if (res.ok) {
-            const freshData = await res.json();
+            const rawText = await res.text();
+            let freshData = null;
+            if (rawText.trim().startsWith("{")) {
+                freshData = JSON.parse(rawText);
+            } else {
+                freshData = JSON.parse(decryptCloudPayload(rawText));
+            }
             if (freshData && freshData.courses) {
                 db = freshData;
                 localStorage.setItem('rw_cached_db', JSON.stringify(db));
@@ -2549,6 +2619,15 @@ async function syncLiveCloudData() {
 }
 syncLiveCloudData();
 
+
+
+function copyMyDeviceId() {
+    const id = (window.AndroidBridge && window.AndroidBridge.getDeviceId) ? window.AndroidBridge.getDeviceId() : '';
+    if (id && navigator.clipboard) {
+        navigator.clipboard.writeText(id);
+        alert("📋 Device ID Copied: " + id);
+    }
+}
 
 function verifyAndUnlockWithKey() {
     const keyVal = (document.getElementById('unlockKeyInput').value || '').trim().toUpperCase();
@@ -2564,7 +2643,7 @@ function verifyAndUnlockWithKey() {
     }
 
     if (!isValid) {
-        alert("❌ Invalid or Expired Key! Please generate a fresh key from Step 1.");
+        alert("❌ Invalid, Already Used, or Expired Key!\nHar key sirf isi phone par 1 baar (15 min ke andar) kaam karti hai. Nayi key generate karein.");
         return;
     }
 
