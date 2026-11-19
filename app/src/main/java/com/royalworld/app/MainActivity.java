@@ -209,10 +209,48 @@ public class MainActivity extends AppCompatActivity {
                 client.close();
                 return;
             }
-            String pathPart = reqLine.split(" ")[1];
+            String pathPart = reqLine.split(" ")[1].split("\\?")[0];
+            OutputStream out = client.getOutputStream();
+
+            // Route 1: HLS Offline Vault (/hls/{classId}/index.m3u8 or /hls/{classId}/seg_X.rwts)
+            if (pathPart.startsWith("/hls/")) {
+                String rel = pathPart.substring(5); // {classId}/filename
+                File target = new File(new File(getFilesDir(), "rw_vault"), rel);
+                if (!target.exists() || !target.isFile()) {
+                    out.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                    client.close();
+                    return;
+                }
+                boolean isPlaylist = rel.endsWith(".m3u8");
+                String contentType = isPlaylist ? "application/vnd.apple.mpegurl" : "video/mp2t";
+                long fileLen = target.length();
+                String headers = "HTTP/1.1 200 OK\r\n"
+                    + "Content-Type: " + contentType + "\r\n"
+                    + "Access-Control-Allow-Origin: *\r\n"
+                    + "Content-Length: " + fileLen + "\r\n"
+                    + "Connection: close\r\n\r\n";
+                out.write(headers.getBytes(StandardCharsets.UTF_8));
+
+                FileInputStream fis = new FileInputStream(target);
+                byte[] buf = new byte[16384];
+                int read;
+                while ((read = fis.read(buf)) != -1) {
+                    if (!isPlaylist) {
+                        for (int i = 0; i < read; i++) buf[i] = (byte) (buf[i] ^ XOR_KEY);
+                    }
+                    out.write(buf, 0, read);
+                }
+                out.flush();
+                fis.close();
+                client.close();
+                return;
+            }
+
+            // Route 2: Direct MP4 Vault (/{classId}.mp4)
             String classId = pathPart.replace("/", "").replace(".mp4", "");
             File vidFile = new File(new File(getFilesDir(), "rw_vault"), classId + ".rwvid");
             if (!vidFile.exists()) {
+                out.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
                 client.close();
                 return;
             }
@@ -233,10 +271,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             long contentLen = end - start + 1;
-            OutputStream out = client.getOutputStream();
             String headers = (isPartial ? "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n")
                 + "Content-Type: video/mp4\r\n"
                 + "Accept-Ranges: bytes\r\n"
+                + "Access-Control-Allow-Origin: *\r\n"
                 + "Content-Length: " + contentLen + "\r\n"
                 + (isPartial ? "Content-Range: bytes " + start + "-" + end + "/" + fileLen + "\r\n" : "")
                 + "Connection: close\r\n\r\n";
@@ -356,7 +394,7 @@ public class MainActivity extends AppCompatActivity {
             saveOfflineVideoWithQuality(classId, title, videoUrl, "480p");
         }
 
-        // Direct Bunny.net CDN MP4 Downloader (720p / 480p) -> Saves XOR-Encrypted .rwvid into private sandbox!
+        // Universal Bunny.net HLS (.m3u8) + Direct MP4 Encrypted Offline Downloader (Works on ALL old & new videos without MP4 fallback!)
         @JavascriptInterface
         public void saveOfflineVideoWithQuality(String classId, String title, String videoUrl, String quality) {
             if (videoUrl == null || videoUrl.trim().isEmpty()) {
@@ -367,88 +405,168 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "📥 Downloading (" + qLabel + ") to Encrypted Vault...", Toast.LENGTH_SHORT).show());
             new Thread(() -> {
                 try {
-                    String resolvedUrl = resolveBunnyMp4Url(videoUrl.trim(), qLabel);
-                    if (resolvedUrl == null || resolvedUrl.isEmpty()) {
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "⚠️ Invalid video link format.", Toast.LENGTH_LONG).show());
+                    String raw = videoUrl.trim();
+                    File vaultRoot = new File(getFilesDir(), "rw_vault");
+                    if (!vaultRoot.exists()) vaultRoot.mkdirs();
+
+                    // Case A: Direct MP4 link
+                    if (raw.endsWith(".mp4") || raw.contains(".mp4?")) {
+                        downloadEncryptedMp4(vaultRoot, classId, title, qLabel, raw);
                         return;
                     }
 
-                    URL url = new URL(resolvedUrl);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
-                    conn.connect();
-
-                    int code = conn.getResponseCode();
-                    // Fallback to 480p if 720p doesn't exist for this video
-                    if (code >= 400 && "720p".equals(qLabel)) {
-                        String fallbackUrl = resolveBunnyMp4Url(videoUrl.trim(), "480p");
-                        if (fallbackUrl != null) {
-                            conn = (HttpURLConnection) new URL(fallbackUrl).openConnection();
-                            conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
-                            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
-                            conn.connect();
-                            code = conn.getResponseCode();
-                        }
-                    }
-
-                    if (code >= 400) {
-                        final int finalCode = code;
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ MP4 not ready (HTTP " + finalCode + "). Enable 'MP4 Fallback' & 'Serve MP4 fallback files' in Bunny.net!", Toast.LENGTH_LONG).show());
+                    // Case B: Bunny.net Stream URL -> Download HLS (.m3u8 + .ts segments) directly!
+                    String videoUuid = extractUuid(raw);
+                    if (videoUuid == null) {
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "⚠️ Invalid Bunny video link.", Toast.LENGTH_LONG).show());
                         return;
                     }
 
-                    File privateDir = new File(getFilesDir(), "rw_vault");
-                    if (!privateDir.exists()) privateDir.mkdirs();
-                    File outFile = new File(privateDir, classId + ".rwvid");
+                    // Try requested quality HLS playlist, fallback to 480p or 360p if needed
+                    String[] tryQualities = "720p".equals(qLabel) ? new String[]{"720p", "480p", "360p"} : new String[]{"480p", "360p", "720p"};
+                    String activeQuality = null;
+                    String playlistText = null;
+                    String baseSegmentUrl = null;
 
-                    InputStream is = conn.getInputStream();
-                    FileOutputStream fos = new FileOutputStream(outFile);
-                    byte[] buffer = new byte[16384];
-                    int len;
-                    while ((len = is.read(buffer)) != -1) {
-                        for (int i = 0; i < len; i++) {
-                            buffer[i] = (byte) (buffer[i] ^ XOR_KEY);
+                    for (String q : tryQualities) {
+                        String m3u8Url = "https://" + BUNNY_CDN_HOST + "/" + videoUuid + "/" + q + "/video.m3u8";
+                        String fetched = fetchTextUrl(m3u8Url);
+                        if (fetched != null && fetched.contains("#EXTM3U")) {
+                            activeQuality = q;
+                            playlistText = fetched;
+                            baseSegmentUrl = "https://" + BUNNY_CDN_HOST + "/" + videoUuid + "/" + q + "/";
+                            break;
                         }
-                        fos.write(buffer, 0, len);
                     }
-                    fos.close();
-                    is.close();
 
-                    File metaFile = new File(privateDir, classId + ".json");
+                    if (playlistText == null) {
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ Could not load video stream. Check internet connection.", Toast.LENGTH_LONG).show());
+                        return;
+                    }
+
+                    File hlsDir = new File(vaultRoot, classId);
+                    if (!hlsDir.exists()) hlsDir.mkdirs();
+
+                    String[] lines = playlistText.split("\r?\n");
+                    StringBuilder localM3u8 = new StringBuilder();
+                    int segIndex = 0;
+                    long totalBytes = 0;
+
+                    for (String line : lines) {
+                        String trimmed = line.trim();
+                        if (trimmed.isEmpty()) continue;
+                        if (trimmed.startsWith("#")) {
+                            localM3u8.append(trimmed).append("\n");
+                        } else {
+                            String segUrl = trimmed.startsWith("http") ? trimmed : (baseSegmentUrl + trimmed);
+                            String localSegName = "seg_" + segIndex + ".rwts";
+                            File segFile = new File(hlsDir, localSegName);
+                            long bytes = downloadAndEncryptFile(segUrl, segFile);
+                            if (bytes <= 0) {
+                                throw new Exception("Failed on segment " + segIndex);
+                            }
+                            totalBytes += bytes;
+                            localM3u8.append(localSegName).append("\n");
+                            segIndex++;
+                        }
+                    }
+
+                    if (segIndex == 0) {
+                        throw new Exception("No video segments found in playlist.");
+                    }
+
+                    File localPlaylistFile = new File(hlsDir, "index.m3u8");
+                    FileOutputStream pFos = new FileOutputStream(localPlaylistFile);
+                    pFos.write(localM3u8.toString().getBytes(StandardCharsets.UTF_8));
+                    pFos.close();
+
+                    File metaFile = new File(vaultRoot, classId + ".json");
                     JSONObject meta = new JSONObject();
                     meta.put("id", classId);
-                    meta.put("title", title + " (" + qLabel + ")");
-                    meta.put("sizeMb", String.format(Locale.US, "%.1f MB", outFile.length() / (1024.0 * 1024.0)));
+                    meta.put("type", "hls");
+                    meta.put("title", title + " (" + activeQuality + ")");
+                    meta.put("sizeMb", String.format(Locale.US, "%.1f MB", totalBytes / (1024.0 * 1024.0)));
                     FileOutputStream mFos = new FileOutputStream(metaFile);
                     mFos.write(meta.toString().getBytes(StandardCharsets.UTF_8));
                     mFos.close();
 
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Saved (" + qLabel + ") to Offline Vault!", Toast.LENGTH_LONG).show());
+                    final String doneQ = activeQuality;
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Saved (" + doneQ + ") to Offline Vault!", Toast.LENGTH_LONG).show());
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ Download failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
                 }
             }).start();
         }
 
-        private String resolveBunnyMp4Url(String rawUrl, String quality) {
-            if (rawUrl.endsWith(".mp4") || rawUrl.contains(".mp4?")) {
-                return rawUrl;
+        private void downloadEncryptedMp4(File vaultRoot, String classId, String title, String qLabel, String mp4Url) throws Exception {
+            File outFile = new File(vaultRoot, classId + ".rwvid");
+            long bytes = downloadAndEncryptFile(mp4Url, outFile);
+            if (bytes <= 0) throw new Exception("Empty MP4 file");
+            File metaFile = new File(vaultRoot, classId + ".json");
+            JSONObject meta = new JSONObject();
+            meta.put("id", classId);
+            meta.put("type", "mp4");
+            meta.put("title", title + " (" + qLabel + ")");
+            meta.put("sizeMb", String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0)));
+            FileOutputStream mFos = new FileOutputStream(metaFile);
+            mFos.write(meta.toString().getBytes(StandardCharsets.UTF_8));
+            mFos.close();
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Saved (" + qLabel + ") to Offline Vault!", Toast.LENGTH_LONG).show());
+        }
+
+        private String extractUuid(String rawUrl) {
+            Pattern uuidPattern = Pattern.compile("([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})");
+            Matcher m = uuidPattern.matcher(rawUrl);
+            return m.find() ? m.group(1) : null;
+        }
+
+        private String fetchTextUrl(String urlStr) {
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+                conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(15000);
+                if (conn.getResponseCode() >= 400) return null;
+                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line).append("\n");
+                br.close();
+                return sb.toString();
+            } catch (Exception e) {
+                return null;
             }
-            // Extract Bunny Video UUID from https://player.mediadelivery.net/play/{libId}/{videoUuid} or /embed/{libId}/{videoUuid}
-            if (rawUrl.contains("mediadelivery.net/")) {
-                Pattern uuidPattern = Pattern.compile("([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})");
-                Matcher m = uuidPattern.matcher(rawUrl);
-                if (m.find()) {
-                    String videoUuid = m.group(1);
-                    return "https://" + BUNNY_CDN_HOST + "/" + videoUuid + "/play_" + quality + ".mp4";
-                }
+        }
+
+        private long downloadAndEncryptFile(String urlStr, File outFile) throws Exception {
+            HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+            conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(20000);
+            if (conn.getResponseCode() >= 400) return -1;
+            InputStream is = conn.getInputStream();
+            FileOutputStream fos = new FileOutputStream(outFile);
+            byte[] buffer = new byte[16384];
+            int len;
+            long total = 0;
+            while ((len = is.read(buffer)) != -1) {
+                for (int i = 0; i < len; i++) buffer[i] = (byte) (buffer[i] ^ XOR_KEY);
+                fos.write(buffer, 0, len);
+                total += len;
             }
-            return null;
+            fos.close();
+            is.close();
+            return total;
         }
 
         @JavascriptInterface
         public String getLocalStreamUrl(String classId) {
+            File hlsPlaylist = new File(new File(new File(getFilesDir(), "rw_vault"), classId), "index.m3u8");
+            if (hlsPlaylist.exists()) {
+                return "http://127.0.0.1:" + localStreamPort + "/hls/" + classId + "/index.m3u8";
+            }
             return "http://127.0.0.1:" + localStreamPort + "/" + classId + ".mp4";
         }
 
@@ -477,6 +595,14 @@ public class MainActivity extends AppCompatActivity {
             File privateDir = new File(getFilesDir(), "rw_vault");
             new File(privateDir, classId + ".rwvid").delete();
             new File(privateDir, classId + ".json").delete();
+            File hlsDir = new File(privateDir, classId);
+            if (hlsDir.exists() && hlsDir.isDirectory()) {
+                File[] children = hlsDir.listFiles();
+                if (children != null) {
+                    for (File c : children) c.delete();
+                }
+                hlsDir.delete();
+            }
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "🗑️ Deleted from Offline Vault", Toast.LENGTH_SHORT).show());
         }
     }
