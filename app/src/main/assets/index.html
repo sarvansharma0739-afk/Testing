@@ -281,6 +281,14 @@ header {
 .wrap { padding-bottom: 95px !important; }
 footer { display: none; } /* Cleaner native app feel without web footer */
 
+
+.key-input-box {
+    width: 100%; background: #080b12; border: 1.5px solid var(--gold);
+    border-radius: 12px; padding: 13px; color: #fff; font-family: monospace;
+    font-size: 16px; font-weight: 700; text-align: center; letter-spacing: 1px;
+    margin: 12px 0; outline: none;
+}
+
 </style>
 </head>
 <body oncontextmenu="return false;" onkeydown="return disableShortcuts(event);">
@@ -288,7 +296,7 @@ footer { display: none; } /* Cleaner native app feel without web footer */
 <div class="wrap">
 <header>
   <div class="brand">
-    <div class="logo" onclick="secretAdminLogin()" title="RoyalWorld">RW</div>
+    <div class="logo" >RW</div>
     <div class="brand-text">
       <h1>RoyalWorld</h1>
       <p>Official Learning App</p>
@@ -522,17 +530,22 @@ footer { display: none; } /* Cleaner native app feel without web footer */
     </div>
 </div>
 
-<!-- 3. Ad Unlock Popup (BATCH SPECIFIC + TEST BONUS) -->
+<!-- 3. Key Generation & Verification Modal -->
 <div id="adModal" class="modal" style="display: none;">
     <div class="modal-box" style="text-align:center;">
         <button class="close-modal" onclick="closeModals()">×</button>
-        <h3 class="modal-title" style="font-size:22px; color:#fff;" id="adModalTitle">🔒 Batch Locked</h3>
-        <div style="font-size:50px; margin:10px 0;">🎁</div>
-        <p style="color:var(--muted); margin-bottom:25px; line-height:1.5;" id="adModalDesc">
-            Is Batch ko open karne ke liye 1 chhota sa Ad dekhein.<br><br>
-            <strong style="color:var(--gold2);">✨ Bonus:</strong> Koi bhi 1 Batch unlock karne par <strong style="color:#2ecc71;">Live Tests Section</strong> poore 24 Ghante ke liye automatic Free ho jayega!
+        <h3 class="modal-title" style="font-size:20px; color:#fff;" id="adModalTitle">🔑 Unlock Batch (24h Access)</h3>
+        <p style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.5;" id="adModalDesc">
+            <strong>Step 1:</strong> "Generate Key" par click karke Chrome browser mein verification complete karein.<br>
+            <strong>Step 2:</strong> Wahan mili Key copy karke neeche paste karein.<br>
+            <span style="color:#2ecc71;">✨ Bonus: 1 Batch unlock karne par saare Mock Tests bhi khul jayenge!</span>
         </p>
-        <button class="btn btn-green" style="font-size:16px;" onclick="confirmCourseUnlock()">🚀 Watch Ad &amp; Unlock Batch</button>
+        <button class="btn btn-blue" style="font-size:14px; margin-bottom:14px;" onclick="confirmCourseUnlock()">🌐 Step 1: Generate Access Key</button>
+        <div style="border-top:1px dashed var(--line); padding-top:12px;">
+            <div style="font-size:12px; color:var(--gold2); font-weight:700;">Step 2: Paste Generated Key Below</div>
+            <input type="text" id="unlockKeyInput" class="key-input-box" placeholder="RW-XXXX-XXXX-XXXX" autocomplete="off">
+            <button class="btn btn-green" style="font-size:15px;" onclick="verifyAndUnlockWithKey()">🔓 Verify Key &amp; Unlock</button>
+        </div>
     </div>
 </div>
 
@@ -662,7 +675,7 @@ footer { display: none; } /* Cleaner native app feel without web footer */
 window.ROYAL_DATA = {
   "config": {
     "adsEnabled": true,
-    "adminPass": "Uml0aWtAMjAwMQ==",
+    "adminPass": "",
     "adLink": "https://shrinkme.click/Jm198",
     "adMobEnabled": false
   },
@@ -1718,9 +1731,8 @@ function confirmCourseUnlock() {
         return;
     }
 
-    if (window.AndroidBridge && window.AndroidBridge.openAdUrl) {
-        closeModals();
-        window.AndroidBridge.openAdUrl(targetAdLink);
+    if (window.AndroidBridge && window.AndroidBridge.openExternal) {
+        window.AndroidBridge.openExternal(targetAdLink);
         return;
     }
 
@@ -2217,7 +2229,7 @@ function closePlayer() {
 
 // --- ADMIN SYSTEM ---
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-function verifyAdmin() {
+function verifyAdmin() { alert('Admin disabled in Student App.'); return;
     if(btoa(document.getElementById("adminPass").value) === db.config.adminPass) {
         isAdmin = true; closeModals(); document.getElementById("adminPass").value = ""; 
         document.getElementById("adminBar").style.display = "flex"; refreshCurrentView();
@@ -2491,7 +2503,7 @@ function showOfflineVideos() {
                 <div class="class-top"><span class="class-num completed">SAVED OFFLINE</span></div>
                 <h4 class="class-title">${esc(v.title)}</h4>
                 <div class="class-actions">
-                    <button class="btn-play" onclick="playOfflineVaultVideo('${esc(v.path)}', '${esc(v.title)}')">▶ Play Offline</button>
+                    <button class="btn-play" onclick="playOfflineVaultVideo('${esc(v.id)}', '${esc(v.title)}')">▶ Play Offline</button>
                     <button class="admin-btn del" style="max-width:65px; height:40px; border-radius:10px;" onclick="removeOfflineVaultVideo('${esc(v.id)}')">🗑</button>
                 </div>
             </div>
@@ -2500,12 +2512,16 @@ function showOfflineVideos() {
     switchView('offline', 'Offline Vault');
 }
 
-function playOfflineVaultVideo(filePath, title) {
+function playOfflineVaultVideo(classId, title) {
     document.getElementById("playerTitle").innerText = title;
     const iframe = document.getElementById("videoFrame");
     const vid = document.getElementById("nativeVideoPlayer");
     iframe.src = ""; iframe.style.display = "none";
-    vid.style.display = "block"; vid.src = "file://" + filePath; vid.play();
+    vid.style.display = "block";
+    if (window.AndroidBridge && window.AndroidBridge.getLocalStreamUrl) {
+        vid.src = window.AndroidBridge.getLocalStreamUrl(classId);
+    }
+    vid.play();
     document.getElementById("playerModal").style.display = "flex";
 }
 
@@ -2532,6 +2548,52 @@ async function syncLiveCloudData() {
     } catch (e) {}
 }
 syncLiveCloudData();
+
+
+function verifyAndUnlockWithKey() {
+    const keyVal = (document.getElementById('unlockKeyInput').value || '').trim().toUpperCase();
+    if (!keyVal) {
+        alert("⚠️ Please paste your Access Key first!");
+        return;
+    }
+    let isValid = false;
+    if (window.AndroidBridge && window.AndroidBridge.verifyAccessKey) {
+        isValid = window.AndroidBridge.verifyAccessKey(keyVal);
+    } else {
+        isValid = /^RW-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/.test(keyVal);
+    }
+
+    if (!isValid) {
+        alert("❌ Invalid or Expired Key! Please generate a fresh key from Step 1.");
+        return;
+    }
+
+    const courseId = localStorage.getItem('rw_pending_unlock_course') || pendingUnlockCourseId || (db.courses[0] ? db.courses[0].id : null);
+    if (courseId) {
+        let unlocks = getCourseUnlocks();
+        unlocks[courseId] = Date.now() + ACCESS_DURATION_MS;
+        localStorage.setItem('rw_course_unlocks', JSON.stringify(unlocks));
+        localStorage.removeItem('rw_pending_unlock_course');
+    }
+    document.getElementById('unlockKeyInput').value = '';
+    closeModals();
+    if (window.confetti) confetti({particleCount: 150, spread: 80, origin: { y: 0.6 }});
+    refreshCurrentView();
+    const cObj = db.courses.find(c => c.id === courseId);
+    setTimeout(() => alert(`✅ Key Verified! "${cObj ? cObj.title : 'Batch'}" + All Mock Tests unlocked for 24 Hours!`), 250);
+}
+
+window.handleIncomingKeyFromDeepLink = function(key, batchId) {
+    if (batchId) {
+        pendingUnlockCourseId = batchId;
+        localStorage.setItem('rw_pending_unlock_course', batchId);
+    }
+    if (key) {
+        const inp = document.getElementById('unlockKeyInput');
+        if (inp) inp.value = key;
+        verifyAndUnlockWithKey();
+    }
+};
 
 showCourses();
 </script>

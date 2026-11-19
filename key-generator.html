@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoyalWorld | Access Key Generator</title>
+<style>
+  :root { --bg:#080b12; --panel:#111722; --gold:#e8bd62; --gold2:#f7d98c; --green:#2ecc71; --text:#f4f6fa; --muted:#9ba8bb; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:18px; background:radial-gradient(circle at top, #172235 0%, #080b12 65%); color:var(--text); font-family:system-ui,-apple-system,sans-serif; }
+  .card { width:100%; max-width:430px; background:var(--panel); border:1px solid rgba(232,189,98,0.35); border-radius:22px; padding:28px 22px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.75); }
+  .badge { width:58px; height:58px; margin:0 auto 14px; border-radius:16px; background:linear-gradient(135deg, #f7d98c, #c8912e); color:#0b0f19; display:grid; place-items:center; font-weight:900; font-size:22px; box-shadow:0 8px 25px rgba(232,189,98,0.3); }
+  h1 { margin:0 0 6px; font-size:21px; color:#fff; }
+  p { margin:0 0 20px; color:var(--muted); font-size:13.5px; line-height:1.5; }
+  .key-box { background:#080b12; border:1.5px dashed var(--gold); border-radius:14px; padding:16px; margin-bottom:18px; }
+  .key-label { font-size:11px; text-transform:uppercase; letter-spacing:1.4px; color:var(--gold); font-weight:700; margin-bottom:6px; }
+  .key-val { font-family:monospace; font-size:22px; font-weight:900; letter-spacing:1.5px; color:#fff; word-break:break-all; }
+  .btn { width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; margin-bottom:10px; display:block; text-decoration:none; transition:0.2s; }
+  .btn-gold { background:linear-gradient(90deg, #e8bd62, #f7d98c); color:#0b0f19; }
+  .btn-green { background:linear-gradient(90deg, #2ecc71, #27ae60); color:#fff; }
+  .note { font-size:11.5px; color:var(--muted); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="badge">RW</div>
+  <h1>✅ Verification Successful!</h1>
+  <p>Aapki 24-Hour Premium Access Key taiyar hai. Is key ko copy karke <strong>RoyalWorld App</strong> mein paste karein.</p>
+
+  <div class="key-box">
+    <div class="key-label">Your 24-Hour Access Key</div>
+    <div class="key-val" id="accessKeyText">Generating...</div>
+  </div>
+
+  <button class="btn btn-gold" onclick="copyKey()">📋 Copy Access Key</button>
+  <a id="deepLinkBtn" href="#" class="btn btn-green">🚀 Open App & Unlock Now</a>
+  <div class="note">Note: Agar button se app na khule, toh upar se Key copy karke app mein paste karein.</div>
+</div>
+
+<script>
+const SECRET_SALT = "RW_KING_2026_SECURE_KEY_9981";
+
+function getISTDateString() {
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffsetMs);
+  const y = istDate.getUTCFullYear();
+  const m = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(istDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function generateKey() {
+  const dateStr = getISTDateString();
+  const msgBuffer = new TextEncoder().encode(`${SECRET_SALT}:${dateStr}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hex = hashArray.slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const key = `RW-${hex.slice(0,4)}-${hex.slice(4,8)}-${hex.slice(8,12)}`;
+
+  document.getElementById('accessKeyText').innerText = key;
+  const params = new URLSearchParams(window.location.search);
+  const batchParam = params.get('b') || '';
+  document.getElementById('deepLinkBtn').href = `royalworld://unlock?key=${encodeURIComponent(key)}&b=${encodeURIComponent(batchParam)}`;
+}
+
+function copyKey() {
+  const key = document.getElementById('accessKeyText').innerText;
+  navigator.clipboard.writeText(key).then(() => {
+    alert("✅ Key Copied: " + key + "\nAb RoyalWorld App khol kar paste kar dein!");
+  });
+}
+
+generateKey();
+</script>
+</body>
+</html>
