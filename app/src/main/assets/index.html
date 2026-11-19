@@ -2314,7 +2314,6 @@ if (sessionStorage.getItem('rw_comm_seen') === '1') document.getElementById('com
 updateOnlineStatus(); 
 initAdCheck(); 
 
-// --- DAILY STREAK TRACKER ---
 function updateDailyStreak() {
     const today = new Date().toDateString();
     let streakData = JSON.parse(localStorage.getItem('rw_streak_data') || '{"count": 1, "lastDate": ""}');
@@ -2332,7 +2331,6 @@ function updateDailyStreak() {
     if (el) el.innerText = streakData.count;
 }
 
-// --- AUDIO-ONLY MODE & DOUBLE-TAP SKIP ---
 let isAudioOnly = false;
 function toggleAudioOnlyMode() {
     isAudioOnly = !isAudioOnly;
@@ -2354,7 +2352,6 @@ function skipVideo(seconds) {
     }
 }
 
-// --- PERMANENT PDF NOTES & HIDDEN IN-APP OFFLINE VIDEO VAULT ---
 function downloadPdfPermanent(url, title) {
     if (window.AndroidBridge && window.AndroidBridge.downloadNoteToDevice) {
         window.AndroidBridge.downloadNoteToDevice(url, title.replace(/[^a-zA-Z0-9_-]/g, '_'));
@@ -2419,7 +2416,6 @@ function removeOfflineVaultVideo(classId) {
     }
 }
 
-// --- LIVE CLOUD SYNC (Update App Content Without New APK) ---
 async function syncLiveCloudData() {
     const cloudUrl = db.config.cloudDataUrl || localStorage.getItem('rw_cloud_url');
     if (!cloudUrl || !navigator.onLine) return;

@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. ANTI-PIRACY: Block Screenshots & Screen Recording completely
+        // ANTI-PIRACY: Block Screenshots & Screen Recording completely
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
         webView = new WebView(this);
@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith("http://") || url.startsWith("https://")) {
-                    // Open ShrinkMe or External Links in Chrome/Browser
                     if (url.contains("shrinkme") || url.contains("t.me") || url.contains("whatsapp.com")) {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         startActivity(intent);
@@ -97,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
-        // Permanent PDF Notes Download to Phone Downloads Folder
         @JavascriptInterface
         public void downloadNoteToDevice(String url, String fileName) {
             try {
@@ -114,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Hidden Offline Video Download inside App-Private Sandbox (Invisible in Gallery/File Manager)
         @JavascriptInterface
         public void saveOfflineVideo(String classId, String title, String videoUrl) {
             if (videoUrl == null || videoUrl.isEmpty() || videoUrl.contains("player.mediadelivery.net/play")) {
@@ -141,7 +138,6 @@ public class MainActivity extends AppCompatActivity {
                     fos.close();
                     is.close();
 
-                    // Save metadata
                     File metaFile = new File(privateDir, classId + ".json");
                     JSONObject meta = new JSONObject();
                     meta.put("id", classId);
