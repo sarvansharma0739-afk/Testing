@@ -1,15 +1,15 @@
-name: Build RoyalWorld APK
+name: Build RoyalWorld Pro APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -18,19 +18,31 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Accept Android SDK Licenses
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
-
-      - name: Setup Gradle 8.5
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
 
-      - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Decode Permanent Release Keystore (if configured in Secrets)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > app/royalworld-release.jks
+            echo "✅ Permanent Release Keystore loaded!"
+          else
+            echo "⚠️ KEYSTORE_BASE64 secret not set yet — building with fallback debug signing."
+          fi
 
-      - name: Upload RoyalWorld APK
+      - name: Build Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle assembleRelease --stacktrace
+
+      - name: Upload RoyalWorld Pro APK
         uses: actions/upload-artifact@v4
         with:
-          name: RoyalWorld-Premium-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: RoyalWorld-Pro-APK
+          path: app/build/outputs/apk/release/*.apk
