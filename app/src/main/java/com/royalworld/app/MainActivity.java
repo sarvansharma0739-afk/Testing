@@ -1,9 +1,15 @@
 package com.royalworld.app;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -21,6 +27,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import com.google.firebase.messaging.FirebaseMessaging;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,20 +45,34 @@ import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private static final byte XOR_KEY = (byte) 0x5A; // Vault encryption key
+    private static final byte XOR_KEY = (byte) 0x5A;
     private static final String SECRET_SALT = "RW_KING_2026_SECURE_KEY_9981";
+    private static final String PUSH_CHANNEL_ID = "royalworld_push";
     private int localStreamPort = 0;
+
+    private final BroadcastReceiver downloadProgressReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (VideoDownloadService.ACTION_PROGRESS.equals(intent.getAction()) && webView != null) {
+                String cid = intent.getStringExtra(VideoDownloadService.EXTRA_CLASS_ID);
+                int pct = intent.getIntExtra(VideoDownloadService.EXTRA_PERCENT, 0);
+                String status = intent.getStringExtra(VideoDownloadService.EXTRA_STATUS);
+                String state = intent.getStringExtra(VideoDownloadService.EXTRA_STATE);
+                String js = "if(window.onDownloadProgress){ window.onDownloadProgress("
+                    + JSONObject.quote(cid != null ? cid : "") + ","
+                    + pct + ","
+                    + JSONObject.quote(status != null ? status : "") + ","
+                    + JSONObject.quote(state != null ? state : "") + "); }";
+                runOnUiThread(() -> webView.evaluateJavascript(js, null));
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(Color.parseColor("#080b12"));
         getWindow().setNavigationBarColor(Color.parseColor("#080b12"));
 
-        // 2. ENVIRONMENT SECURITY CHECKS (Root, Emulator, Proxy Sniffer)
+        // 2. ENVIRONMENT SECURITY CHECKS
         String securityIssue = checkSecurityEnvironment();
         if (securityIssue != null) {
             new AlertDialog.Builder(this)
@@ -69,6 +94,18 @@ public class MainActivity extends AppCompatActivity {
                 .show();
             return;
         }
+
+        // 3. Request Notification Permission on Android 13+ (Required for Download Progress & Push Notifications)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+
+        // 4. Safe Firebase Push Topic Subscription (Auto-activates when google-services.json is added)
+        try {
+            FirebaseMessaging.getInstance().subscribeToTopic("all_students");
+        } catch (Throwable ignored) {}
 
         startLocalVaultStreamServer();
 
@@ -106,7 +143,6 @@ public class MainActivity extends AppCompatActivity {
                     if (url.contains("127.0.0.1") || url.contains("localhost") || url.contains("mediadelivery.net") || url.contains("drive.google.com")) {
                         return false;
                     }
-                    // Open all external shortlinks / Telegram / WhatsApp in real Chrome browser so multi-tab ads NEVER crash!
                     openInChromeBrowser(url);
                     return true;
                 }
@@ -114,11 +150,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Register Live Download Progress Receiver
+        IntentFilter filter = new IntentFilter(VideoDownloadService.ACTION_PROGRESS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(downloadProgressReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(downloadProgressReceiver, filter);
+        }
+
         handleIntent(getIntent());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try { unregisterReceiver(downloadProgressReceiver); } catch (Exception ignored) {}
+    }
+
     private String checkSecurityEnvironment() {
-        // Root / Magisk Check
         String[] rootPaths = {
             "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su",
             "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su", "/sbin/magisk"
@@ -128,7 +177,6 @@ public class MainActivity extends AppCompatActivity {
                 return "Rooted device detected! RoyalWorld cannot run on rooted devices to protect course content.";
             }
         }
-        // Emulator Check
         if ((Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
             || Build.FINGERPRINT.startsWith("generic")
             || Build.FINGERPRINT.startsWith("unknown")
@@ -140,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
             || Build.MANUFACTURER.contains("Genymotion")) {
             return "Emulator detected! Please install RoyalWorld on a real Android smartphone.";
         }
-        // Packet Sniffer / HTTP Proxy Check (HTTP Canary / Charles Proxy)
         String proxyHost = System.getProperty("http.proxyHost");
         String proxyPort = System.getProperty("http.proxyPort");
         if (proxyHost != null && !proxyHost.isEmpty() && proxyPort != null && !proxyPort.isEmpty()) {
@@ -187,7 +234,6 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    // Local lightweight HTTP streaming server that decrypts .rwvid on-the-fly for native video playback
     private void startLocalVaultStreamServer() {
         new Thread(() -> {
             try {
@@ -212,9 +258,9 @@ public class MainActivity extends AppCompatActivity {
             String pathPart = reqLine.split(" ")[1].split("\\?")[0];
             OutputStream out = client.getOutputStream();
 
-            // Route 1: HLS Offline Vault (/hls/{classId}/index.m3u8 or /hls/{classId}/seg_X.rwts)
+            // Route 1: HLS Offline Vault (/hls/{classId}/index.m3u8 or seg_X.rwts)
             if (pathPart.startsWith("/hls/")) {
-                String rel = pathPart.substring(5); // {classId}/filename
+                String rel = pathPart.substring(5);
                 File target = new File(new File(getFilesDir(), "rw_vault"), rel);
                 if (!target.exists() || !target.isFile()) {
                     out.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
@@ -286,9 +332,7 @@ public class MainActivity extends AppCompatActivity {
             long remaining = contentLen;
             int read;
             while (remaining > 0 && (read = fis.read(buf, 0, (int) Math.min(buf.length, remaining))) != -1) {
-                for (int i = 0; i < read; i++) {
-                    buf[i] = (byte) (buf[i] ^ XOR_KEY);
-                }
+                for (int i = 0; i < read; i++) buf[i] = (byte) (buf[i] ^ XOR_KEY);
                 out.write(buf, 0, read);
                 remaining -= read;
             }
@@ -313,14 +357,120 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public int getAppVersionCode() {
+            try {
+                PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    return (int) pi.getLongVersionCode();
+                } else {
+                    return pi.versionCode;
+                }
+            } catch (Exception e) {
+                return 4;
+            }
+        }
+
+        // In-App APK Updater: Downloads new APK with Notification progress bar & launches Android Installer
+        @JavascriptInterface
+        public void downloadAndInstallUpdate(String apkUrl) {
+            if (apkUrl == null || apkUrl.trim().isEmpty()) return;
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "🚀 Downloading RoyalWorld Update...", Toast.LENGTH_LONG).show());
+            new Thread(() -> {
+                NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    NotificationChannel ch = new NotificationChannel("royalworld_updates", "App Updates", NotificationManager.IMPORTANCE_LOW);
+                    nm.createNotificationChannel(ch);
+                }
+                int updNotifId = 5005;
+                try {
+                    File outFile = new File(getExternalFilesDir(null), "RoyalWorld-Update.apk");
+                    HttpURLConnection conn = (HttpURLConnection) new URL(apkUrl.trim()).openConnection();
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(30000);
+                    if (conn.getResponseCode() >= 400) throw new Exception("HTTP " + conn.getResponseCode());
+
+                    long totalLen = conn.getContentLengthLong();
+                    InputStream is = conn.getInputStream();
+                    FileOutputStream fos = new FileOutputStream(outFile);
+                    byte[] buf = new byte[16384];
+                    int len;
+                    long downloaded = 0;
+                    long lastTick = 0;
+
+                    while ((len = is.read(buf)) != -1) {
+                        fos.write(buf, 0, len);
+                        downloaded += len;
+                        long now = System.currentTimeMillis();
+                        if (now - lastTick > 350) {
+                            lastTick = now;
+                            int pct = totalLen > 0 ? (int) ((downloaded * 100L) / totalLen) : 50;
+                            NotificationCompat.Builder b = new NotificationCompat.Builder(MainActivity.this, "royalworld_updates")
+                                .setSmallIcon(android.R.drawable.stat_sys_download)
+                                .setContentTitle("Updating RoyalWorld")
+                                .setContentText(pct + "% downloaded...")
+                                .setOnlyAlertOnce(true)
+                                .setOngoing(true)
+                                .setProgress(100, pct, totalLen <= 0);
+                            nm.notify(updNotifId, b.build());
+                            final int fp = pct;
+                            runOnUiThread(() -> webView.evaluateJavascript("if(window.onAppUpdateProgress){window.onAppUpdateProgress(" + fp + ");}", null));
+                        }
+                    }
+                    fos.close();
+                    is.close();
+                    nm.cancel(updNotifId);
+
+                    runOnUiThread(() -> {
+                        try {
+                            Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", outFile);
+                            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                            installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(installIntent);
+                        } catch (Exception e) {
+                            Toast.makeText(MainActivity.this, "Open Downloads to install update: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (Exception e) {
+                    nm.cancel(updNotifId);
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ Update download failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            }).start();
+        }
+
+        // Instant Local Push Notification triggered from RoyalWorld-Admin.html via royal_data.enc
+        @JavascriptInterface
+        public void showLocalNotification(String noticeId, String title, String message) {
+            if (noticeId == null || noticeId.isEmpty() || title == null || title.isEmpty()) return;
+            android.content.SharedPreferences prefs = getSharedPreferences("rw_seen_notices", Context.MODE_PRIVATE);
+            if (prefs.getBoolean(noticeId, false)) return;
+            prefs.edit().putBoolean(noticeId, true).apply();
+
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel ch = new NotificationChannel(PUSH_CHANNEL_ID, "RoyalWorld Announcements", NotificationManager.IMPORTANCE_HIGH);
+                nm.createNotificationChannel(ch);
+            }
+            Intent intent = new Intent(MainActivity.this, MainActivity.class);
+            PendingIntent pi = PendingIntent.getActivity(MainActivity.this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+            NotificationCompat.Builder b = new NotificationCompat.Builder(MainActivity.this, PUSH_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pi);
+            nm.notify(noticeId.hashCode(), b.build());
+        }
+
+        @JavascriptInterface
         public String getDeviceId() {
             String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
             return androidId != null ? androidId : "RW_DEVICE";
         }
 
-        // Verify Device-Locked, One-Time Burn, 15-Minute Expiry Key:
-        // Format: RW-<TS_HEX_8>-<NONCE_4>-<SIG_8>
-        // Signature = SHA256(SECRET_SALT + ":" + DEVICE_ID + ":" + TS_HEX_8 + ":" + NONCE_4)[0..8]
         @JavascriptInterface
         public boolean verifyAccessKey(String inputKey) {
             if (inputKey == null) return false;
@@ -331,28 +481,19 @@ public class MainActivity extends AppCompatActivity {
             String tsHex = parts[1];
             String nonce = parts[2];
             String sig = parts[3];
-
             if (tsHex.length() != 8 || nonce.length() != 4 || sig.length() != 8) return false;
 
             try {
-                // 1. Check if key was already used (One-Time Burn)
                 android.content.SharedPreferences prefs = getSharedPreferences("rw_burned_keys", Context.MODE_PRIVATE);
-                if (prefs.getBoolean(clean, false)) {
-                    return false;
-                }
+                if (prefs.getBoolean(clean, false)) return false;
 
-                // 2. Check 15-minute expiry window (900 seconds)
                 long keyEpochSec = Long.parseLong(tsHex, 16);
                 long nowSec = System.currentTimeMillis() / 1000L;
-                if (nowSec - keyEpochSec > 900L || keyEpochSec - nowSec > 120L) {
-                    return false;
-                }
+                if (nowSec - keyEpochSec > 900L || keyEpochSec - nowSec > 120L) return false;
 
-                // 3. Verify cryptographic signature bound to THIS exact phone's Device ID
                 String devId = getDeviceId().toUpperCase(Locale.ROOT);
                 String expectedSig = computeKeySignature(devId, tsHex, nonce);
                 if (expectedSig.equals(sig)) {
-                    // Burn key immediately so it can NEVER be reused!
                     prefs.edit().putBoolean(clean, true).apply();
                     return true;
                 }
@@ -365,9 +506,7 @@ public class MainActivity extends AppCompatActivity {
             String payload = SECRET_SALT + ":" + devId + ":" + tsHex + ":" + nonce;
             byte[] hash = md.digest(payload.getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder();
-            for (int i = 0; i < 4; i++) {
-                hex.append(String.format("%02X", hash[i]));
-            }
+            for (int i = 0; i < 4; i++) hex.append(String.format("%02X", hash[i]));
             return hex.toString();
         }
 
@@ -387,178 +526,32 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        private static final String BUNNY_CDN_HOST = "vz-0d9ed9ee-956.b-cdn.net";
-
         @JavascriptInterface
         public void saveOfflineVideo(String classId, String title, String videoUrl) {
             saveOfflineVideoWithQuality(classId, title, videoUrl, "480p");
         }
 
-        // Universal Bunny.net HLS (.m3u8) + Direct MP4 Encrypted Offline Downloader (Works on ALL old & new videos without MP4 fallback!)
         @JavascriptInterface
         public void saveOfflineVideoWithQuality(String classId, String title, String videoUrl, String quality) {
             if (videoUrl == null || videoUrl.trim().isEmpty()) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "⚠️ Video link not available for this lecture.", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "⚠️ Video link not available.", Toast.LENGTH_SHORT).show());
                 return;
             }
-            final String qLabel = ("720p".equals(quality)) ? "720p" : "480p";
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "📥 Downloading (" + qLabel + ") to Encrypted Vault...", Toast.LENGTH_SHORT).show());
-            new Thread(() -> {
-                try {
-                    String raw = videoUrl.trim();
-                    File vaultRoot = new File(getFilesDir(), "rw_vault");
-                    if (!vaultRoot.exists()) vaultRoot.mkdirs();
-
-                    // Case A: Direct MP4 link
-                    if (raw.endsWith(".mp4") || raw.contains(".mp4?")) {
-                        downloadEncryptedMp4(vaultRoot, classId, title, qLabel, raw);
-                        return;
-                    }
-
-                    // Case B: Bunny.net Stream URL -> Download HLS (.m3u8 + .ts segments) directly!
-                    String videoUuid = extractUuid(raw);
-                    if (videoUuid == null) {
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "⚠️ Invalid Bunny video link.", Toast.LENGTH_LONG).show());
-                        return;
-                    }
-
-                    // Try requested quality HLS playlist, fallback to 480p or 360p if needed
-                    String[] tryQualities = "720p".equals(qLabel) ? new String[]{"720p", "480p", "360p"} : new String[]{"480p", "360p", "720p"};
-                    String activeQuality = null;
-                    String playlistText = null;
-                    String baseSegmentUrl = null;
-
-                    for (String q : tryQualities) {
-                        String m3u8Url = "https://" + BUNNY_CDN_HOST + "/" + videoUuid + "/" + q + "/video.m3u8";
-                        String fetched = fetchTextUrl(m3u8Url);
-                        if (fetched != null && fetched.contains("#EXTM3U")) {
-                            activeQuality = q;
-                            playlistText = fetched;
-                            baseSegmentUrl = "https://" + BUNNY_CDN_HOST + "/" + videoUuid + "/" + q + "/";
-                            break;
-                        }
-                    }
-
-                    if (playlistText == null) {
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ Could not load video stream. Check internet connection.", Toast.LENGTH_LONG).show());
-                        return;
-                    }
-
-                    File hlsDir = new File(vaultRoot, classId);
-                    if (!hlsDir.exists()) hlsDir.mkdirs();
-
-                    String[] lines = playlistText.split("\r?\n");
-                    StringBuilder localM3u8 = new StringBuilder();
-                    int segIndex = 0;
-                    long totalBytes = 0;
-
-                    for (String line : lines) {
-                        String trimmed = line.trim();
-                        if (trimmed.isEmpty()) continue;
-                        if (trimmed.startsWith("#")) {
-                            localM3u8.append(trimmed).append("\n");
-                        } else {
-                            String segUrl = trimmed.startsWith("http") ? trimmed : (baseSegmentUrl + trimmed);
-                            String localSegName = "seg_" + segIndex + ".rwts";
-                            File segFile = new File(hlsDir, localSegName);
-                            long bytes = downloadAndEncryptFile(segUrl, segFile);
-                            if (bytes <= 0) {
-                                throw new Exception("Failed on segment " + segIndex);
-                            }
-                            totalBytes += bytes;
-                            localM3u8.append(localSegName).append("\n");
-                            segIndex++;
-                        }
-                    }
-
-                    if (segIndex == 0) {
-                        throw new Exception("No video segments found in playlist.");
-                    }
-
-                    File localPlaylistFile = new File(hlsDir, "index.m3u8");
-                    FileOutputStream pFos = new FileOutputStream(localPlaylistFile);
-                    pFos.write(localM3u8.toString().getBytes(StandardCharsets.UTF_8));
-                    pFos.close();
-
-                    File metaFile = new File(vaultRoot, classId + ".json");
-                    JSONObject meta = new JSONObject();
-                    meta.put("id", classId);
-                    meta.put("type", "hls");
-                    meta.put("title", title + " (" + activeQuality + ")");
-                    meta.put("sizeMb", String.format(Locale.US, "%.1f MB", totalBytes / (1024.0 * 1024.0)));
-                    FileOutputStream mFos = new FileOutputStream(metaFile);
-                    mFos.write(meta.toString().getBytes(StandardCharsets.UTF_8));
-                    mFos.close();
-
-                    final String doneQ = activeQuality;
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Saved (" + doneQ + ") to Offline Vault!", Toast.LENGTH_LONG).show());
-                } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "❌ Download failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                }
-            }).start();
+            Intent intent = new Intent(MainActivity.this, VideoDownloadService.class);
+            intent.setAction(VideoDownloadService.ACTION_START);
+            intent.putExtra(VideoDownloadService.EXTRA_CLASS_ID, classId);
+            intent.putExtra(VideoDownloadService.EXTRA_TITLE, title);
+            intent.putExtra(VideoDownloadService.EXTRA_URL, videoUrl.trim());
+            intent.putExtra(VideoDownloadService.EXTRA_QUALITY, quality);
+            ContextCompat.startForegroundService(MainActivity.this, intent);
         }
 
-        private void downloadEncryptedMp4(File vaultRoot, String classId, String title, String qLabel, String mp4Url) throws Exception {
-            File outFile = new File(vaultRoot, classId + ".rwvid");
-            long bytes = downloadAndEncryptFile(mp4Url, outFile);
-            if (bytes <= 0) throw new Exception("Empty MP4 file");
-            File metaFile = new File(vaultRoot, classId + ".json");
-            JSONObject meta = new JSONObject();
-            meta.put("id", classId);
-            meta.put("type", "mp4");
-            meta.put("title", title + " (" + qLabel + ")");
-            meta.put("sizeMb", String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0)));
-            FileOutputStream mFos = new FileOutputStream(metaFile);
-            mFos.write(meta.toString().getBytes(StandardCharsets.UTF_8));
-            mFos.close();
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Saved (" + qLabel + ") to Offline Vault!", Toast.LENGTH_LONG).show());
-        }
-
-        private String extractUuid(String rawUrl) {
-            Pattern uuidPattern = Pattern.compile("([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})");
-            Matcher m = uuidPattern.matcher(rawUrl);
-            return m.find() ? m.group(1) : null;
-        }
-
-        private String fetchTextUrl(String urlStr) {
-            try {
-                HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-                conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(15000);
-                if (conn.getResponseCode() >= 400) return null;
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) sb.append(line).append("\n");
-                br.close();
-                return sb.toString();
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-        private long downloadAndEncryptFile(String urlStr, File outFile) throws Exception {
-            HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-            conn.setRequestProperty("Referer", "https://iframe.mediadelivery.net/");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(20000);
-            if (conn.getResponseCode() >= 400) return -1;
-            InputStream is = conn.getInputStream();
-            FileOutputStream fos = new FileOutputStream(outFile);
-            byte[] buffer = new byte[16384];
-            int len;
-            long total = 0;
-            while ((len = is.read(buffer)) != -1) {
-                for (int i = 0; i < len; i++) buffer[i] = (byte) (buffer[i] ^ XOR_KEY);
-                fos.write(buffer, 0, len);
-                total += len;
-            }
-            fos.close();
-            is.close();
-            return total;
+        @JavascriptInterface
+        public void cancelOfflineDownload(String classId) {
+            Intent intent = new Intent(MainActivity.this, VideoDownloadService.class);
+            intent.setAction(VideoDownloadService.ACTION_CANCEL);
+            intent.putExtra(VideoDownloadService.EXTRA_CLASS_ID, classId);
+            startService(intent);
         }
 
         @JavascriptInterface

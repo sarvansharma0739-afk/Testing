@@ -1,11 +1,7 @@
--optimizationpasses 5
--dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
--verbose
--keepattributes JavascriptInterface, *Annotation*
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
--keepclassmembers class com.royalworld.app.MainActivity$RoyalBridge {
-    public *;
-}
+-keep class com.royalworld.app.MainActivity$RoyalBridge { *; }
+-keep class com.royalworld.app.VideoDownloadService { *; }
+-keep class com.royalworld.app.RoyalFirebaseMessagingService { *; }
+-dontwarn com.google.firebase.**

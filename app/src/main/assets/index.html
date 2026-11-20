@@ -289,6 +289,21 @@ footer { display: none; } /* Cleaner native app feel without web footer */
     margin: 12px 0; outline: none;
 }
 
+
+/* --- LIVE FLOATING DOWNLOAD PROGRESS BAR --- */
+#liveDownloadBar {
+    display: none; position: fixed; left: 12px; right: 12px; bottom: 72px; z-index: 300;
+    background: rgba(17, 23, 34, 0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(232, 189, 98, 0.45); border-radius: 14px; padding: 12px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+.dl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 7px; }
+.dl-title { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.dl-status { font-size: 11.5px; color: var(--gold2); font-weight: 700; white-space: nowrap; }
+.dl-cancel { background: #5c2b2b; color: #ffb3b3; border: none; border-radius: 7px; padding: 4px 9px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.dl-track { width: 100%; height: 6px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+.dl-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), #2ecc71); transition: width 0.25s ease; }
+
 </style>
 </head>
 <body oncontextmenu="return false;" onkeydown="return disableShortcuts(event);">
@@ -669,6 +684,32 @@ footer { display: none; } /* Cleaner native app feel without web footer */
         <p style="color:var(--muted); font-size:12.5px; margin:0 0 16px;">Choose resolution to save inside app:</p>
         <button class="btn" style="margin-bottom:10px; font-size:14px;" onclick="startQualityDownload('720p')">🎬 720p HD (High Quality)</button>
         <button class="btn btn-blue" style="font-size:14px;" onclick="startQualityDownload('480p')">⚡ 480p SD (Data Saver)</button>
+    </div>
+</div>
+
+
+<!-- LIVE DOWNLOAD PROGRESS BAR -->
+<div id="liveDownloadBar">
+    <div class="dl-top">
+        <div class="dl-title" id="dlBarTitle">Downloading lecture...</div>
+        <div class="dl-status" id="dlBarStatus">0%</div>
+        <button class="dl-cancel" onclick="cancelActiveDownload()">Cancel</button>
+    </div>
+    <div class="dl-track"><div class="dl-fill" id="dlBarFill"></div></div>
+</div>
+
+<!-- 11. IN-APP APK UPDATE MODAL -->
+<div id="appUpdateModal" class="modal" style="display: none; z-index: 9998;">
+    <div class="modal-box" style="text-align:center; max-width:380px;">
+        <button class="close-modal" onclick="closeModals()">×</button>
+        <div style="display:inline-block; background:rgba(46,204,113,0.15); border:1px solid rgba(46,204,113,0.45); color:#2ecc71; font-size:10.5px; font-weight:800; letter-spacing:1.3px; padding:4px 12px; border-radius:99px; margin-bottom:10px;">NEW UPDATE AVAILABLE</div>
+        <h3 class="modal-title" style="font-size:20px; color:#fff; margin-bottom:6px;">🚀 RoyalWorld App Update</h3>
+        <p id="updNotesText" style="color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5;">New features &amp; performance improvements are ready. Your downloaded videos and keys will stay 100% safe.</p>
+        <div id="updProgWrap" style="display:none; margin-bottom:14px;">
+            <div style="font-size:12px; color:var(--gold2); font-weight:700; margin-bottom:6px;" id="updProgText">Downloading update... 0%</div>
+            <div class="dl-track"><div class="dl-fill" id="updProgFill"></div></div>
+        </div>
+        <button class="btn btn-green" id="btnStartAppUpdate" style="font-size:15px;" onclick="triggerApkUpdate()">⬇ Update Now</button>
     </div>
 </div>
 
@@ -2544,7 +2585,7 @@ function showOfflineVideos() {
     } else {
         grid.innerHTML = list.map(v => `
             <div class="class-card completed">
-                <div class="class-top"><span class="class-num completed">SAVED OFFLINE</span></div>
+                <div class="class-top"><span class="class-num completed">SAVED OFFLINE ${v.sizeMb ? '• ' + esc(v.sizeMb) : ''}</span></div>
                 <h4 class="class-title">${esc(v.title)}</h4>
                 <div class="class-actions">
                     <button class="btn-play" onclick="playOfflineVaultVideo('${esc(v.id)}', '${esc(v.title)}')">▶ Play Offline</button>
@@ -2613,10 +2654,94 @@ async function syncLiveCloudData() {
                 db = freshData;
                 localStorage.setItem('rw_cached_db', JSON.stringify(db));
                 refreshCurrentView();
+                checkForAppUpdateAndNotice();
             }
         }
     } catch (e) {}
 }
+
+let activeDownloadClassId = null;
+
+window.onDownloadProgress = function(classId, percent, statusText, state) {
+    const bar = document.getElementById('liveDownloadBar');
+    const titleEl = document.getElementById('dlBarTitle');
+    const statusEl = document.getElementById('dlBarStatus');
+    const fillEl = document.getElementById('dlBarFill');
+    if (!bar) return;
+
+    const cls = db.classes.find(c => c.id === classId);
+    activeDownloadClassId = classId;
+    titleEl.innerText = cls ? cls.title : 'Downloading Lecture...';
+    statusEl.innerText = statusText || (percent + '%');
+    fillEl.style.width = Math.max(0, Math.min(100, percent)) + '%';
+
+    if (state === 'downloading') {
+        bar.style.display = 'block';
+    } else if (state === 'done') {
+        bar.style.display = 'block';
+        fillEl.style.width = '100%';
+        setTimeout(() => { bar.style.display = 'none'; if (currentView === 'offline') showOfflineVideos(); }, 2500);
+    } else {
+        bar.style.display = 'none';
+    }
+};
+
+function cancelActiveDownload() {
+    if (activeDownloadClassId && window.AndroidBridge && window.AndroidBridge.cancelOfflineDownload) {
+        window.AndroidBridge.cancelOfflineDownload(activeDownloadClassId);
+    }
+    document.getElementById('liveDownloadBar').style.display = 'none';
+}
+
+function checkForAppUpdateAndNotice() {
+    if (!db || !db.config) return;
+
+    // 1. Trigger Instant Admin Notification (if new)
+    if (db.config.pushNotice && db.config.pushNotice.id && db.config.pushNotice.title) {
+        if (window.AndroidBridge && window.AndroidBridge.showLocalNotification) {
+            window.AndroidBridge.showLocalNotification(
+                String(db.config.pushNotice.id),
+                String(db.config.pushNotice.title),
+                String(db.config.pushNotice.message || '')
+            );
+        }
+    }
+
+    // 2. Check for In-App APK Update
+    const latestVer = parseInt(db.config.latestVersionCode || 0);
+    const apkUrl = (db.config.apkUpdateUrl || '').trim();
+    if (latestVer > 0 && apkUrl && window.AndroidBridge && window.AndroidBridge.getAppVersionCode) {
+        const currentVer = parseInt(window.AndroidBridge.getAppVersionCode());
+        if (latestVer > currentVer) {
+            const notesEl = document.getElementById('updNotesText');
+            if (notesEl && db.config.updateNotes) {
+                notesEl.innerText = db.config.updateNotes;
+            }
+            document.getElementById('appUpdateModal').style.display = 'flex';
+        }
+    }
+}
+
+function triggerApkUpdate() {
+    const apkUrl = (db.config && db.config.apkUpdateUrl || '').trim();
+    if (!apkUrl) return;
+    document.getElementById('updProgWrap').style.display = 'block';
+    document.getElementById('btnStartAppUpdate').disabled = true;
+    document.getElementById('btnStartAppUpdate').innerText = 'Downloading...';
+    if (window.AndroidBridge && window.AndroidBridge.downloadAndInstallUpdate) {
+        window.AndroidBridge.downloadAndInstallUpdate(apkUrl);
+    } else {
+        window.open(apkUrl, '_blank');
+    }
+}
+
+window.onAppUpdateProgress = function(pct) {
+    const txt = document.getElementById('updProgText');
+    const fill = document.getElementById('updProgFill');
+    if (txt) txt.innerText = 'Downloading update... ' + pct + '%';
+    if (fill) fill.style.width = pct + '%';
+};
+
 syncLiveCloudData();
 
 
