@@ -130,25 +130,29 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return handleUrl(url);
-            }
+public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+    String url = request.getUrl().toString();
 
-            private boolean handleUrl(String url) {
-                if (url.startsWith("royalworld://")) {
-                    handleDeepLinkUrl(url);
-                    return true;
-                }
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    if (url.contains("127.0.0.1") || url.contains("localhost") || url.contains("mediadelivery.net") || url.contains("drive.google.com")) {
-                        return false;
-                    }
-                    openInChromeBrowser(url);
-                    return true;
-                }
-                return false;
-            }
-        });
+    // Sirf Key Generation, Ad-Shortlinks aur Social apps bahar browser mein khulenge
+    if (url.contains("key-generator") ||
+        url.contains("t.me/") ||
+        url.contains("wa.me/") ||
+        url.contains("whatsapp.com") ||
+        url.contains("instagram.com") ||
+        url.contains("youtube.com") ||
+        url.contains("youtu.be") ||
+        url.contains("short") ||      // agar aapka ad-shortlink domain kuch aur hai toh uska naam yahan add kar dein
+        url.contains("gplinks") ||
+        url.contains("shrinkme")) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        startActivity(intent);
+        return true;
+    }
+
+    // Baaki SAB (Tests, Courses, PDFs, Website) app ke andar hi khulega
+    view.loadUrl(url);
+    return true;
+}
 
         // Register Live Download Progress Receiver
         IntentFilter filter = new IntentFilter(VideoDownloadService.ACTION_PROGRESS);
