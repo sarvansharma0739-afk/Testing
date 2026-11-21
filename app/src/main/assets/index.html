@@ -2583,16 +2583,22 @@ function showOfflineVideos() {
     if (list.length === 0) {
         grid.innerHTML = '<div class="empty">No offline downloads yet.<br><span style="font-size:12px;">Tap the download icon next to any lecture to save it offline.</span></div>';
     } else {
-        grid.innerHTML = list.map(v => `
+        grid.innerHTML = list.map(v => {
+            const clsObj = db.classes.find(c => c.id === v.id);
+            const subObj = clsObj ? db.subjects.find(s => s.id === clsObj.subjectId) : null;
+            const metaLabel = [subObj ? subObj.title : '', (clsObj && clsObj.chapter) ? clsObj.chapter : ''].filter(Boolean).join(' • ');
+
+            return `
             <div class="class-card completed">
                 <div class="class-top"><span class="class-num completed">SAVED OFFLINE ${v.sizeMb ? '• ' + esc(v.sizeMb) : ''}</span></div>
+                ${metaLabel ? `<div style="font-size:11.5px; color:var(--gold2); font-weight:700; margin-bottom:-6px;">${esc(metaLabel)}</div>` : ''}
                 <h4 class="class-title">${esc(v.title)}</h4>
                 <div class="class-actions">
                     <button class="btn-play" onclick="playOfflineVaultVideo('${esc(v.id)}', '${esc(v.title)}')">▶ Play Offline</button>
                     <button class="admin-btn del" style="max-width:65px; height:40px; border-radius:10px;" onclick="removeOfflineVaultVideo('${esc(v.id)}')">🗑</button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
     switchView('offline', 'Offline Vault');
 }
